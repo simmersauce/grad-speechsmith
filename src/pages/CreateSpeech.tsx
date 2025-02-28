@@ -1,211 +1,320 @@
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 
-const steps = [
-  {
-    title: "Basic Information",
-    fields: ["name", "school", "graduationType"],
-  },
-  {
-    title: "Key Messages",
-    fields: ["keyAchievements", "futureAspirations"],
-  },
-  {
-    title: "Personal Touch",
-    fields: ["memorableExperience", "thanksTo"],
-  },
-];
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  role: z.string().min(2, { message: "Role must be at least 2 characters." }),
+  institution: z.string().min(2, { message: "Institution must be at least 2 characters." }),
+  graduationType: z.string(),
+  tone: z.string(),
+  keyPoints: z.string(),
+  memories: z.string(),
+  acknowledgements: z.string(),
+  additionalInfo: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const CreateSpeech = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
-    name: "",
-    school: "",
-    graduationType: "",
-    keyAchievements: "",
-    futureAspirations: "",
-    memorableExperience: "",
-    thanksTo: "",
+  const [activeTab, setActiveTab] = useState("1");
+  const [userInputs, setUserInputs] = useState<Partial<FormValues>>({});
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      role: "",
+      institution: "",
+      graduationType: "",
+      tone: "",
+      keyPoints: "",
+      memories: "",
+      acknowledgements: "",
+      additionalInfo: "",
+    },
   });
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const onSubmit = (values: FormValues) => {
+    console.log(values);
+    navigate("/review", { state: { formData: values } });
   };
 
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      navigate("/review", { state: { formData } });
+  const handleNext = async () => {
+    const currentTabNumber = parseInt(activeTab);
+    if (currentTabNumber < 3) {
+      // Collect form values for the current tab
+      const values = form.getValues();
+      setUserInputs((prev) => ({ ...prev, ...values }));
+      
+      // Validate the fields for the current tab
+      let isValid = true;
+      if (currentTabNumber === 1) {
+        isValid = await form.trigger(["name", "role", "institution", "graduationType"]);
+      } else if (currentTabNumber === 2) {
+        isValid = await form.trigger(["tone", "keyPoints"]);
+      }
+      
+      if (isValid) {
+        setActiveTab((currentTabNumber + 1).toString());
+      }
     }
   };
 
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+  const handlePrevious = () => {
+    const currentTabNumber = parseInt(activeTab);
+    if (currentTabNumber > 1) {
+      setActiveTab((currentTabNumber - 1).toString());
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-secondary/20 py-16">
-      <div className="container max-w-2xl mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card className="p-8">
-            <div className="mb-8">
-              <div className="flex justify-between mb-4">
-                {steps.map((step, index) => (
-                  <div
-                    key={step.title}
-                    className={`flex-1 text-center ${
-                      index === currentStep ? "text-primary font-medium" : "text-gray-400"
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center ${
-                        index === currentStep ? "bg-primary text-white" : "bg-gray-100"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                    <span className="text-sm">{step.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Form>
-              {currentStep === 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <Label htmlFor="name">Your Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="school">School/University</Label>
-                    <Input
-                      id="school"
-                      value={formData.school}
-                      onChange={(e) => handleInputChange("school", e.target.value)}
-                      placeholder="Enter your institution name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="graduationType">Type of Graduation</Label>
-                    <Input
-                      id="graduationType"
-                      value={formData.graduationType}
-                      onChange={(e) => handleInputChange("graduationType", e.target.value)}
-                      placeholder="e.g., High School, College, Master's"
-                    />
-                  </div>
-                </motion.div>
-              )}
-
-              {currentStep === 1 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <Label htmlFor="keyAchievements">Key Achievements</Label>
-                    <Textarea
-                      id="keyAchievements"
-                      value={formData.keyAchievements}
-                      onChange={(e) => handleInputChange("keyAchievements", e.target.value)}
-                      placeholder="Share your main accomplishments during your academic journey"
-                      rows={4}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="futureAspirations">Future Aspirations</Label>
-                    <Textarea
-                      id="futureAspirations"
-                      value={formData.futureAspirations}
-                      onChange={(e) => handleInputChange("futureAspirations", e.target.value)}
-                      placeholder="What are your hopes and dreams for the future?"
-                      rows={4}
-                    />
-                  </div>
-                </motion.div>
-              )}
-
-              {currentStep === 2 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <Label htmlFor="memorableExperience">Most Memorable Experience</Label>
-                    <Textarea
-                      id="memorableExperience"
-                      value={formData.memorableExperience}
-                      onChange={(e) => handleInputChange("memorableExperience", e.target.value)}
-                      placeholder="Share a special moment or experience from your time at school"
-                      rows={4}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="thanksTo">Special Thanks</Label>
-                    <Textarea
-                      id="thanksTo"
-                      value={formData.thanksTo}
-                      onChange={(e) => handleInputChange("thanksTo", e.target.value)}
-                      placeholder="Who would you like to thank in your speech?"
-                      rows={4}
-                    />
-                  </div>
-                </motion.div>
-              )}
-
-              <div className="flex justify-between mt-8">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className="flex items-center"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Previous
-                </Button>
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  className="flex items-center bg-primary hover:bg-primary/90"
-                >
-                  {currentStep === steps.length - 1 ? "Review" : "Next"}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </Form>
-          </Card>
-        </motion.div>
+    <div className="container mx-auto py-16 px-4 max-w-4xl">
+      <div className="text-center mb-12">
+        <GraduationCap className="w-16 h-16 mx-auto text-primary mb-4" />
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">Create Your Graduation Speech</h1>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Fill out the form below with details about yourself and your graduation.
+          Our AI will craft a personalized speech just for you.
+        </p>
       </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="mb-8">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-3 mb-8">
+                <TabsTrigger value="1" className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-sm">
+                    {activeTab === "1" ? <CheckCircle2 className="w-5 h-5 text-primary" /> : "1"}
+                  </div>
+                  <span className="hidden sm:inline">About You</span>
+                </TabsTrigger>
+                <TabsTrigger value="2" className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-sm">
+                    {parseInt(activeTab) > 1 ? <CheckCircle2 className="w-5 h-5 text-primary" /> : "2"}
+                  </div>
+                  <span className="hidden sm:inline">Speech Details</span>
+                </TabsTrigger>
+                <TabsTrigger value="3" className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-sm">
+                    {parseInt(activeTab) > 2 ? <CheckCircle2 className="w-5 h-5 text-primary" /> : "3"}
+                  </div>
+                  <span className="hidden sm:inline">Final Touches</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <TabsContent value="1" className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Role</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Student, Class President, Valedictorian" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="institution"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Institution Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Name of your school or university" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="graduationType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Graduation Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select graduation type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="highSchool">High School</SelectItem>
+                            <SelectItem value="college">College/University</SelectItem>
+                            <SelectItem value="graduate">Graduate School</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+
+                <TabsContent value="2" className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="tone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Desired Tone</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select the tone for your speech" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="inspirational">Inspirational</SelectItem>
+                            <SelectItem value="humorous">Humorous</SelectItem>
+                            <SelectItem value="reflective">Reflective</SelectItem>
+                            <SelectItem value="formal">Formal</SelectItem>
+                            <SelectItem value="mixed">Mixed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="keyPoints"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Key Points to Include</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="What are the main messages you want to convey?"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="memories"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Memorable Experiences</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Share some memorable experiences from your time at the institution"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+
+                <TabsContent value="3" className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="acknowledgements"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Acknowledgements</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Who would you like to thank or acknowledge?"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="additionalInfo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Additional Information (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Any other details that might help create your perfect speech"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+              </motion.div>
+            </Tabs>
+          </div>
+
+          <div className="flex justify-between mt-8">
+            {activeTab !== "1" ? (
+              <Button type="button" variant="outline" onClick={handlePrevious}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+              </Button>
+            ) : (
+              <div></div>
+            )}
+
+            {activeTab !== "3" ? (
+              <Button type="button" onClick={handleNext}>
+                Next <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button type="submit">
+                Review Speech <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </form>
+      </Form>
     </div>
   );
 };

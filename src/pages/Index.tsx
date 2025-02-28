@@ -8,8 +8,11 @@ import {
   Sparkles, 
   ClipboardList, 
   Bot, 
-  Edit 
+  Edit,
+  MessageSquare,
+  Star 
 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -105,6 +108,52 @@ const Index = () => {
           ))}
         </motion.div>
 
+        {/* Testimonials Section */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="mt-28 max-w-5xl mx-auto"
+        >
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Don't take our word for it</h2>
+            <p className="text-xl text-gray-600">
+              Our AI-crafted speeches have been the centerpiece of countless graduations. But don't just take our word for it—hear from those who have inspired with us.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
+              >
+                <Card className="h-full hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="mb-4 flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                      ))}
+                    </div>
+                    <p className="italic mb-6 text-gray-600">"{testimonial.quote}"</p>
+                    <div className="flex items-center">
+                      <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full mr-4">
+                        <MessageSquare className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{testimonial.name}</p>
+                        <p className="text-sm text-gray-500">{testimonial.role}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
         {/* Final CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -160,6 +209,24 @@ const features = [
     title: "Professional Results",
     description: "Get a polished, well-structured speech ready for your big day.",
   },
+];
+
+const testimonials = [
+  {
+    quote: "The speech generated for my high school graduation was better than anything I could have written on my own. It was personal, inspiring, and received a standing ovation!",
+    name: "Emma Johnson",
+    role: "High School Graduate"
+  },
+  {
+    quote: "As a professor, I was skeptical about AI-generated content. But the speech crafted for our department's graduation ceremony was thoughtful and captured our unique academic journey.",
+    name: "Dr. Michael Chen",
+    role: "University Professor"
+  },
+  {
+    quote: "My graduation speech needed to be memorable yet professional. ToastieAI delivered exactly what I needed, with just the right balance of humor and inspiration.",
+    name: "Sarah Williams",
+    role: "MBA Graduate"
+  }
 ];
 
 export default Index;
