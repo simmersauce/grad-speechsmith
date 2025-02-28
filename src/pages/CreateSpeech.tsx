@@ -68,11 +68,11 @@ const CreateSpeech = () => {
       // Validate the fields for the current tab
       let isValid = true;
       if (currentTabNumber === 1) {
-        const fieldsToValidate = ["name", "email", "institution", "graduationType"];
-        if (showOtherGraduationType) {
-          fieldsToValidate.push("graduationTypeOther");
-        }
-        isValid = await form.trigger(fieldsToValidate);
+        isValid = await form.trigger(
+          showOtherGraduationType 
+            ? ["name", "email", "role", "institution", "graduationType", "graduationTypeOther"] 
+            : ["name", "email", "role", "institution", "graduationType"]
+        );
       } else if (currentTabNumber === 2) {
         isValid = await form.trigger(["tone", "keyPoints"]);
       }
@@ -165,6 +165,34 @@ const CreateSpeech = () => {
                         <FormControl>
                           <Input placeholder="Enter your email address" type="email" {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Speaking Role</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your speaking role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="student">Student</SelectItem>
+                            <SelectItem value="valedictorian">Valedictorian</SelectItem>
+                            <SelectItem value="salutatorian">Salutatorian</SelectItem>
+                            <SelectItem value="classPresident">Class President/Representative</SelectItem>
+                            <SelectItem value="guestSpeaker">Guest Speaker</SelectItem>
+                            <SelectItem value="facultyMember">Faculty member</SelectItem>
+                            <SelectItem value="parent">Parent</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
