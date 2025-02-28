@@ -73,12 +73,23 @@ const Index = () => {
           </div>
         </motion.div>
 
+        {/* Benefits Section Header */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="mt-28 mb-12 text-center max-w-3xl mx-auto"
+        >
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Your AI Powered Graduation Speech Assistant</h2>
+          <p className="text-xl text-gray-600">Benefits Of using ToastieAI</p>
+        </motion.div>
+
         {/* Features Section */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="mt-28 grid grid-cols-1 md:grid-cols-3 gap-8"
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
         >
           {features.map((feature, index) => (
             <div
