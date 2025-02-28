@@ -16,9 +16,11 @@ import { GraduationCap } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
   role: z.string().min(2, { message: "Role must be at least 2 characters." }),
   institution: z.string().min(2, { message: "Institution must be at least 2 characters." }),
   graduationType: z.string(),
+  graduationTypeOther: z.string().optional(),
   tone: z.string(),
   keyPoints: z.string(),
   memories: z.string(),
@@ -32,14 +34,17 @@ const CreateSpeech = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("1");
   const [userInputs, setUserInputs] = useState<Partial<FormValues>>({});
+  const [showOtherGraduationType, setShowOtherGraduationType] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      email: "",
       role: "",
       institution: "",
       graduationType: "",
+      graduationTypeOther: "",
       tone: "",
       keyPoints: "",
       memories: "",
@@ -63,7 +68,11 @@ const CreateSpeech = () => {
       // Validate the fields for the current tab
       let isValid = true;
       if (currentTabNumber === 1) {
-        isValid = await form.trigger(["name", "role", "institution", "graduationType"]);
+        const fieldsToValidate = ["name", "email", "institution", "graduationType"];
+        if (showOtherGraduationType) {
+          fieldsToValidate.push("graduationTypeOther");
+        }
+        isValid = await form.trigger(fieldsToValidate);
       } else if (currentTabNumber === 2) {
         isValid = await form.trigger(["tone", "keyPoints"]);
       }
@@ -78,6 +87,16 @@ const CreateSpeech = () => {
     const currentTabNumber = parseInt(activeTab);
     if (currentTabNumber > 1) {
       setActiveTab((currentTabNumber - 1).toString());
+    }
+  };
+
+  const handleGraduationTypeChange = (value: string) => {
+    form.setValue("graduationType", value);
+    setShowOtherGraduationType(value === "other");
+    
+    // Clear the "Other" field if "other" is not selected
+    if (value !== "other") {
+      form.setValue("graduationTypeOther", "");
     }
   };
 
@@ -139,12 +158,12 @@ const CreateSpeech = () => {
 
                   <FormField
                     control={form.control}
-                    name="role"
+                    name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Your Role</FormLabel>
+                        <FormLabel>Your Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Student, Class President, Valedictorian" {...field} />
+                          <Input placeholder="Enter your email address" type="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -171,16 +190,17 @@ const CreateSpeech = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Graduation Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={handleGraduationTypeChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select graduation type" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="highSchool">High School</SelectItem>
-                            <SelectItem value="college">College/University</SelectItem>
-                            <SelectItem value="graduate">Graduate School</SelectItem>
+                            <SelectItem value="highSchool">High school graduation</SelectItem>
+                            <SelectItem value="college">College/university graduation</SelectItem>
+                            <SelectItem value="graduate">Graduate school/PhD graduation</SelectItem>
+                            <SelectItem value="vocational">Vocational/technical school graduation</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
                           </SelectContent>
                         </Select>
@@ -188,6 +208,22 @@ const CreateSpeech = () => {
                       </FormItem>
                     )}
                   />
+
+                  {showOtherGraduationType && (
+                    <FormField
+                      control={form.control}
+                      name="graduationTypeOther"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Please specify</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter your graduation type" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </TabsContent>
 
                 <TabsContent value="2" className="space-y-6">
