@@ -26,6 +26,11 @@ const formSchema = z.object({
   memories: z.string(),
   acknowledgements: z.string(),
   additionalInfo: z.string().optional(),
+  themes: z.string().optional(),
+  personalBackground: z.string().optional(),
+  goalsLessons: z.string().optional(),
+  quote: z.string().optional(),
+  wishes: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,6 +55,11 @@ const CreateSpeech = () => {
       memories: "",
       acknowledgements: "",
       additionalInfo: "",
+      themes: "",
+      personalBackground: "",
+      goalsLessons: "",
+      quote: "",
+      wishes: "",
     },
   });
 
