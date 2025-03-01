@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -63,6 +62,15 @@ const CreateSpeech = () => {
     },
   });
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    if (activeTab !== "3") {
+      e.preventDefault();
+      handleNext();
+    } else {
+      form.handleSubmit(onSubmit)(e);
+    }
+  };
+
   const onSubmit = (values: FormValues) => {
     console.log(values);
     navigate("/review", { state: { formData: values } });
@@ -71,11 +79,9 @@ const CreateSpeech = () => {
   const handleNext = async () => {
     const currentTabNumber = parseInt(activeTab);
     if (currentTabNumber < 3) {
-      // Collect form values for the current tab
       const values = form.getValues();
       setUserInputs((prev) => ({ ...prev, ...values }));
       
-      // Validate the fields for the current tab
       let isValid = true;
       if (currentTabNumber === 1) {
         isValid = await form.trigger(
@@ -104,7 +110,6 @@ const CreateSpeech = () => {
     form.setValue("graduationType", value);
     setShowOtherGraduationType(value === "other");
     
-    // Clear the "Other" field if "other" is not selected
     if (value !== "other") {
       form.setValue("graduationTypeOther", "");
     }
@@ -122,7 +127,7 @@ const CreateSpeech = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={handleFormSubmit}>
           <div className="mb-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid grid-cols-3 mb-8">
