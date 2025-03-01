@@ -268,11 +268,10 @@ const CreateSpeech = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="inspirational">Inspirational</SelectItem>
-                            <SelectItem value="humorous">Humorous</SelectItem>
-                            <SelectItem value="reflective">Reflective</SelectItem>
-                            <SelectItem value="formal">Formal</SelectItem>
-                            <SelectItem value="mixed">Mixed</SelectItem>
+                            <SelectItem value="formal">Formal & elevated</SelectItem>
+                            <SelectItem value="encouraging">Encouraging & supportive</SelectItem>
+                            <SelectItem value="reflective">Reflective & motivational</SelectItem>
+                            <SelectItem value="inspirational">Uplifting & inspirational</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
