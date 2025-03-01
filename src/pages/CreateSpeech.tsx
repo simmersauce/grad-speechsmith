@@ -214,6 +214,20 @@ const CreateSpeech = () => {
 
                   <FormField
                     control={form.control}
+                    name="graduationYear"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Graduation Year</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Class of 2025" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="graduationType"
                     render={({ field }) => (
                       <FormItem>
