@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -48,19 +47,11 @@ const CreateSpeech = () => {
     navigate("/review", { state: { formData: values } });
   };
 
-  // This function handles the form submission
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Always prevent default to control navigation
-    
-    if (activeTab !== "3") {
-      // If not on the last tab, just move to next tab
-      handleNext();
-    } else {
-      // Only when on the final tab, trigger form submission
-      form.handleSubmit(onSubmit)(e);
-    }
+  // New function for final submission on the last tab
+  const handleFinalSubmit = () => {
+    form.handleSubmit(onSubmit)();
   };
-  
+
   const handleNext = async () => {
     const currentTabNumber = parseInt(activeTab);
     if (currentTabNumber < 3) {
@@ -69,12 +60,13 @@ const CreateSpeech = () => {
       
       let isValid = true;
       if (currentTabNumber === 1) {
-        // Specify the field names as literals to ensure type safety
+        // Validate fields on tab 1
         isValid = await form.trigger([
           "name", "email", "role", "institution", "graduationClass", "graduationType",
           ...(showOtherGraduationType ? ["graduationTypeOther" as const] : [])
         ] as const);
       } else if (currentTabNumber === 2) {
+        // Validate fields on tab 2
         isValid = await form.trigger(["tone"] as const);
       }
       
@@ -82,7 +74,7 @@ const CreateSpeech = () => {
         setActiveTab((currentTabNumber + 1).toString());
       }
     }
-  };
+  }; 
 
   const handlePrevious = () => {
     const currentTabNumber = parseInt(activeTab);
@@ -112,7 +104,8 @@ const CreateSpeech = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={handleFormSubmit}>
+        {/* Remove the onSubmit from the form element */}
+        <form>
           <div className="mb-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabHeader activeTab={activeTab} />
@@ -144,7 +137,8 @@ const CreateSpeech = () => {
           <FormNavigation 
             activeTab={activeTab} 
             handlePrevious={handlePrevious} 
-            handleNext={handleNext} 
+            handleNext={handleNext}
+            onFinalSubmit={handleFinalSubmit}
           />
         </form>
       </Form>
