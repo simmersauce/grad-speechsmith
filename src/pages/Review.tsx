@@ -16,9 +16,9 @@ const Review = () => {
   }
 
   const sections = [
-    { title: "Personal Information", fields: ["name", "school", "graduationType"] },
-    { title: "Speech Content", fields: ["keyAchievements", "futureAspirations"] },
-    { title: "Personal Touch", fields: ["memorableExperience", "thanksTo"] },
+  {title: "Personal Information", fields: ["name", "institution", "graduationType", "graduationClass", "role"]},
+  {title: "Speech Content", fields: ["tone", "themes", "memories", "personalBackground", "goalsLessons"]},
+  {title: "Final Touches",fields: ["acknowledgements", "quote", "wishes", "additionalInfo"]}
   ];
 
   const formatFieldName = (field: string) => {
