@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -44,21 +43,11 @@ const CreateSpeech = () => {
     },
   });
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    if (activeTab !== "3") {
-      e.preventDefault();
-      handleNext();
-    } else {
-      form.handleSubmit(onSubmit)(e);
-    }
-  };
-
   const onSubmit = (values: GraduationSpeechFormValues) => {
     console.log(values);
     navigate("/review", { state: { formData: values } });
   };
-      // In CreateSpeech.tsx
-  
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault(); // Always prevent default to control navigation
     
@@ -66,7 +55,7 @@ const CreateSpeech = () => {
       handleNext();
     } else {
       // Only submit when we're on the final tab and validation passes
-      form.handleSubmit(onSubmit)();
+      form.handleSubmit(onSubmit)(e);
     }
   };
   
