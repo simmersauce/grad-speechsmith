@@ -32,7 +32,7 @@ const CreateSpeech = () => {
       graduationType: "",
       graduationTypeOther: "",
       tone: "",
-      keyPoints: "",
+      //keyPoints: "",
       memories: "",
       acknowledgements: "",
       additionalInfo: "",
@@ -57,7 +57,19 @@ const CreateSpeech = () => {
     console.log(values);
     navigate("/review", { state: { formData: values } });
   };
-
+      // In CreateSpeech.tsx
+  
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Always prevent default to control navigation
+    
+    if (activeTab !== "3") {
+      handleNext();
+    } else {
+      // Only submit when we're on the final tab and validation passes
+      form.handleSubmit(onSubmit)();
+    }
+  };
+  
   const handleNext = async () => {
     const currentTabNumber = parseInt(activeTab);
     if (currentTabNumber < 3) {
@@ -66,20 +78,41 @@ const CreateSpeech = () => {
       
       let isValid = true;
       if (currentTabNumber === 1) {
-        isValid = await form.trigger(
-          showOtherGraduationType 
-            ? ["name", "email", "role", "institution", "graduationType", "graduationTypeOther"] 
-            : ["name", "email", "role", "institution", "graduationType"]
-        );
+        isValid = await form.trigger([
+          "name", "email", "role", "institution", "graduationClass", "graduationType",
+          ...(showOtherGraduationType ? ["graduationTypeOther"] : [])
+        ]);
       } else if (currentTabNumber === 2) {
-        isValid = await form.trigger(["tone", "keyPoints"]);
+        isValid = await form.trigger(["tone"]); // Remove "keyPoints" as it's not in your schema
       }
       
       if (isValid) {
         setActiveTab((currentTabNumber + 1).toString());
       }
     }
-  };
+  }; 
+  // const handleNext = async () => {
+  //   const currentTabNumber = parseInt(activeTab);
+  //   if (currentTabNumber < 3) {
+  //     const values = form.getValues();
+  //     setUserInputs((prev) => ({ ...prev, ...values }));
+      
+  //     let isValid = true;
+  //     if (currentTabNumber === 1) {
+  //       isValid = await form.trigger(
+  //         showOtherGraduationType 
+  //           ? ["name", "email", "role", "institution", "graduationType", "graduationTypeOther"] 
+  //           : ["name", "email", "role", "institution", "graduationType"]
+  //       );
+  //     } else if (currentTabNumber === 2) {
+  //       isValid = await form.trigger(["tone"]);
+  //     }
+      
+  //     if (isValid) {
+  //       setActiveTab((currentTabNumber + 1).toString());
+  //     }
+  //   }
+  // };
 
   const handlePrevious = () => {
     const currentTabNumber = parseInt(activeTab);
