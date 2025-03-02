@@ -48,13 +48,15 @@ const CreateSpeech = () => {
     navigate("/review", { state: { formData: values } });
   };
 
+  // This function handles the form submission
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault(); // Always prevent default to control navigation
     
     if (activeTab !== "3") {
+      // If not on the last tab, just move to next tab
       handleNext();
     } else {
-      // When on the final tab, submit the form
+      // Only when on the final tab, trigger form submission
       form.handleSubmit(onSubmit)(e);
     }
   };
