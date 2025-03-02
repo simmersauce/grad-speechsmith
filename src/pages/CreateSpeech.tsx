@@ -42,22 +42,35 @@ const CreateSpeech = () => {
       wishes: "",
     },
   });
+  
+    const handleFormSubmit = (e: React.FormEvent) => {
+  e.preventDefault(); // Prevent default form submission
+  
+  if (activeTab !== "3") {
+    handleNext();
+  } else {
+    // For the final tab, manually trigger form validation and submission
+    form.handleSubmit((values) => {
+      console.log("Form submitted:", values);
+      navigate("/review", { state: { formData: values } });
+    })();
+  }
+};
+  // const onSubmit = (values: GraduationSpeechFormValues) => {
+  //   console.log(values);
+  //   navigate("/review", { state: { formData: values } });
+  // };
 
-  const onSubmit = (values: GraduationSpeechFormValues) => {
-    console.log(values);
-    navigate("/review", { state: { formData: values } });
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Always prevent default to control navigation
+  // const handleFormSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault(); // Always prevent default to control navigation
     
-    if (activeTab !== "3") {
-      handleNext();
-    } else {
-      // Only submit when we're on the final tab and validation passes
-      form.handleSubmit(onSubmit)(e);
-    }
-  };
+  //   if (activeTab !== "3") {
+  //     handleNext();
+  //   } else {
+  //     // Only submit when we're on the final tab and validation passes
+  //     form.handleSubmit(onSubmit)(e);
+  //   }
+  // };
   
   const handleNext = async () => {
     const currentTabNumber = parseInt(activeTab);
