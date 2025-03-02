@@ -79,10 +79,12 @@ const CreateSpeech = () => {
       }
       
       if (isValid) {
-        setActiveTab((currentTabNumber + 1).toString());
+        setTimeout(() => {
+          setActiveTab((currentTabNumber + 1).toString());
+        }, 0);
       }
     }
-  }; 
+  };
 
   const handlePrevious = () => {
     const currentTabNumber = parseInt(activeTab);
