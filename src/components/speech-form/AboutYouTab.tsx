@@ -90,7 +90,7 @@ const AboutYouTab = ({
 
       <FormField
         control={form.control}
-        name="graduatingClass"
+        name="graduationClass"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Graduating Class</FormLabel>
