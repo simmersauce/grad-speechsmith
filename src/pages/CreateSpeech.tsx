@@ -28,6 +28,7 @@ const CreateSpeech = () => {
       email: "",
       role: "",
       institution: "",
+      graduationClass: "",
       graduationType: "",
       graduationTypeOther: "",
       tone: "",
