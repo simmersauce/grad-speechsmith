@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -78,7 +79,6 @@ const CreateSpeech = () => {
       }
       
       if (isValid) {
-        // Removed setTimeout - directly set the active tab
         setActiveTab((currentTabNumber + 1).toString());
       }
     }
