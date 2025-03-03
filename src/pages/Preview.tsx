@@ -89,19 +89,19 @@ const Preview = () => {
   const hasMoreContent = speech.length > PREVIEW_CHAR_LIMIT;
 
   return (
-    <div className="min-h-screen secondary py-16">
+    <div className="min-h-screen secondary py-8 sm:py-16">
       <div className="container max-w-3xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-4">
+          <Card className="p-4 sm:p-8">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4">
                 {isLoading ? "Generating your speech" : "Your speech is ready! 🎓"}
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600">
                 {isLoading 
                   ? "This may take a few moments" 
                   : "Your AI-crafted graduation speech is ready to be unlocked below."}
@@ -109,7 +109,7 @@ const Preview = () => {
             </div>
 
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12">
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12">
                 <Sparkles className="w-8 h-8 text-primary animate-pulse mb-4" />
                 <p className="text-gray-600">Crafting your perfect speech...</p>
               </div>
@@ -120,8 +120,8 @@ const Preview = () => {
                 transition={{ delay: 0.2 }}
                 className="prose prose-lg max-w-none"
               >
-                <div className="bg-white p-8 rounded-lg shadow-sm">
-                  <div className="whitespace-pre-wrap">
+                <div className="bg-white p-4 sm:p-8 rounded-lg shadow-sm">
+                  <div className="whitespace-pre-wrap text-sm sm:text-base">
                     {displayedSpeech}
                     {hasMoreContent && (
                       <>
@@ -133,7 +133,7 @@ const Preview = () => {
                           </div>
                         </div>
                         <div className="text-center mt-4">
-                          <p className="text-primary font-medium">Unlock the full speech to view more</p>
+                          <p className="text-primary font-medium text-sm sm:text-base">Unlock the full speech to view more</p>
                         </div>
                       </>
                     )}
@@ -142,7 +142,7 @@ const Preview = () => {
               </motion.div>
             )}
 
-            <div className="flex justify-start items-center mt-8">
+            <div className="flex justify-start items-center mt-6 sm:mt-8">
               <Button
                 variant="outline"
                 onClick={() => navigate("/create", { state: { formData } })}
@@ -158,13 +158,13 @@ const Preview = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8"
+            className="mt-6 sm:mt-8"
           >
-            <Card className="p-8 text-center max-w-md mx-auto">
-              <h2 className="text-2xl font-bold mb-2">Unlock your speech</h2>
-              <p className="text-primary font-bold text-xl mb-6">29.99 USD</p>
+            <Card className="p-4 sm:p-8 text-center max-w-md mx-auto">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2">Unlock your speech</h2>
+              <p className="text-primary font-bold text-lg sm:text-xl mb-4 sm:mb-6">29.99 USD</p>
               
-              <ul className="space-y-3 text-left max-w-md mx-auto mb-8">
+              <ul className="space-y-2 sm:space-y-3 text-left max-w-md mx-auto mb-6 sm:mb-8 text-sm sm:text-base">
                 {[
                   "3 unique AI generated speech drafts",
                   "One-time payment",
@@ -174,7 +174,7 @@ const Preview = () => {
                   "No sign up required"
                 ].map((benefit, index) => (
                   <li key={index} className="flex items-start">
-                    <Check className="w-5 h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
                     <span>{benefit}</span>
                   </li>
                 ))}
@@ -187,7 +187,7 @@ const Preview = () => {
                     description: "Payment integration will be added in the next update!",
                   });
                 }}
-                className="bg-primary hover:bg-primary/90 w-full py-6 text-lg"
+                className="bg-primary hover:bg-primary/90 w-full py-4 sm:py-6 text-base sm:text-lg"
               >
                 Unlock Speech
               </Button>
