@@ -135,11 +135,11 @@ const Preview = () => {
             <div className="flex justify-start items-center mt-8">
               <Button
                 variant="outline"
-                onClick={() => navigate("/review", { state: { formData } })}
+                onClick={() => navigate("/create", { state: { formData } })}
                 className="flex items-center"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Review
+                Edit Your Form
               </Button>
             </div>
           </Card>
