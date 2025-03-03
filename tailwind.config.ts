@@ -36,6 +36,7 @@ export default {
         accent: {
           DEFAULT: "#FDE1D3",
           foreground: "#1A1A1A",
+          light: "#f7f5f1",
         },
         muted: {
           DEFAULT: "#F1F0FB",
