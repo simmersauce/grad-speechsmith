@@ -24,7 +24,7 @@ const testimonials = [
     type: "Alumni"
   },
   {
-    text: "Toastie turned my scattered thoughts into a powerful speech that brought my classmates to their feet. It celebrated our achievements and gave us all a moment to reflect on everything we've accomplished together.",
+    text: "They turned my scattered thoughts into a powerful speech that brought my classmates to their feet. It celebrated our achievements and gave us all a moment to reflect on everything we've accomplished together.",
     type: "Student"
   }
 ];
