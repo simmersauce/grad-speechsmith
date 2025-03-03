@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Sparkles, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Preview = () => {
   const location = useLocation();
@@ -40,45 +40,17 @@ const Preview = () => {
     const generateSpeech = async () => {
       try {
         setIsLoading(true);
-        // Use formData to construct the prompt
-        const prompt = `Generate an inspiring graduation speech for ${data.name} who is graduating from ${
-          data.institution
-        } (${data.graduationType}). Include their role: ${
-          data.role
-        }, personal background: ${data.personalBackground || "not specified"}, 
-        tone: ${data.tone}, themes: ${data.themes || "not specified"}, 
-        memories: ${data.memories || "not specified"}, 
-        goals and lessons: ${data.goalsLessons || "not specified"}, 
-        and acknowledgements: ${data.acknowledgements || "not specified"}. 
-        Include this quote if provided: ${data.quote || ""}. 
-        Also include these wishes: ${data.wishes || "not specified"}.
-        The speech should be motivational, personal, and around 3-4 paragraphs long.`;
-
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are an expert speechwriter who creates inspiring graduation speeches.",
-              },
-              { role: "user", content: prompt },
-            ],
-          }),
+        
+        // Call the Supabase Edge Function
+        const { data: responseData, error } = await supabase.functions.invoke('generate-speech', {
+          body: { formData: data }
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to generate speech");
+        if (error) {
+          throw new Error(error.message || 'Failed to generate speech');
         }
 
-        const responseData = await response.json();
-        setSpeech(responseData.choices[0].message.content);
+        setSpeech(responseData.speech);
       } catch (error) {
         console.error("Error generating speech:", error);
         toast({
