@@ -150,7 +150,7 @@ const Preview = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="mt-8"
           >
-            <Card className="p-8 text-center">
+            <Card className="p-8 text-center max-w-md mx-auto">
               <h2 className="text-2xl font-bold mb-2">Unlock your speech</h2>
               <p className="text-primary font-bold text-xl mb-6">29.99 USD</p>
               
