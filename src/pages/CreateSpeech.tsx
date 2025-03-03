@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -24,6 +25,7 @@ const CreateSpeech = () => {
   const [userInputs, setUserInputs] = useState<Partial<GraduationSpeechFormValues>>({});
   const [showOtherGraduationType, setShowOtherGraduationType] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formId, setFormId] = useState<string | null>(null);
 
   const form = useForm<GraduationSpeechFormValues>({
     resolver: zodResolver(graduationSpeechFormSchema),
@@ -52,10 +54,23 @@ const CreateSpeech = () => {
     
     if (location.state?.formData) {
       savedData = location.state.formData;
+      // If we have an id from existing form data, set it
+      if (location.state.formId) {
+        setFormId(location.state.formId);
+      }
     } else {
       const storedData = sessionStorage.getItem('speechFormData');
       if (storedData) {
-        savedData = JSON.parse(storedData);
+        try {
+          const parsedData = JSON.parse(storedData);
+          savedData = parsedData.formData;
+          // If we have a stored formId, set it
+          if (parsedData.formId) {
+            setFormId(parsedData.formId);
+          }
+        } catch (error) {
+          console.error("Error parsing stored form data:", error);
+        }
       }
     }
     
@@ -77,27 +92,43 @@ const CreateSpeech = () => {
     try {
       setIsSubmitting(true);
       
-      const { data, error } = await supabase
-        .from('graduation_speeches')
-        .insert({
-          name: values.name,
-          email: values.email,
-          role: values.role,
-          institution: values.institution,
-          graduation_class: values.graduationClass,
-          graduation_type: values.graduationType,
-          graduation_type_other: values.graduationTypeOther,
-          tone: values.tone,
-          memories: values.memories,
-          acknowledgements: values.acknowledgements,
-          additional_info: values.additionalInfo,
-          themes: values.themes,
-          personal_background: values.personalBackground,
-          goals_lessons: values.goalsLessons,
-          quote: values.quote,
-          wishes: values.wishes
-        })
-        .select();
+      const speechData = {
+        name: values.name,
+        email: values.email,
+        role: values.role,
+        institution: values.institution,
+        graduation_class: values.graduationClass,
+        graduation_type: values.graduationType,
+        graduation_type_other: values.graduationTypeOther,
+        tone: values.tone,
+        memories: values.memories,
+        acknowledgements: values.acknowledgements,
+        additional_info: values.additionalInfo,
+        themes: values.themes,
+        personal_background: values.personalBackground,
+        goals_lessons: values.goalsLessons,
+        quote: values.quote,
+        wishes: values.wishes
+      };
+      
+      let result;
+      
+      if (formId) {
+        // Update existing record
+        result = await supabase
+          .from('graduation_speeches')
+          .update(speechData)
+          .eq('id', formId)
+          .select();
+      } else {
+        // Insert new record
+        result = await supabase
+          .from('graduation_speeches')
+          .insert(speechData)
+          .select();
+      }
+      
+      const { data, error } = result;
       
       if (error) {
         console.error("Error saving to Supabase:", error);
@@ -110,13 +141,26 @@ const CreateSpeech = () => {
         return;
       }
       
+      const newFormId = data?.[0]?.id;
+      
       toast({
         title: "Success",
         description: "Your speech information has been saved!",
       });
       
+      // Store the form data and ID in session storage
+      sessionStorage.setItem('speechFormData', JSON.stringify({
+        formData: values,
+        formId: formId || newFormId
+      }));
+      
       console.log("Form submitted and saved to Supabase:", values);
-      navigate("/review", { state: { formData: values } });
+      navigate("/review", { 
+        state: { 
+          formData: values,
+          formId: formId || newFormId
+        } 
+      });
     } catch (error) {
       console.error("Exception saving to Supabase:", error);
       toast({
