@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,12 +14,16 @@ import SpeechDetailsTab from "@/components/speech-form/SpeechDetailsTab";
 import FinalTouchesTab from "@/components/speech-form/FinalTouchesTab";
 import TabHeader from "@/components/speech-form/TabHeader";
 import FormNavigation from "@/components/speech-form/FormNavigation";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const CreateSpeech = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("1");
   const [userInputs, setUserInputs] = useState<Partial<GraduationSpeechFormValues>>({});
   const [showOtherGraduationType, setShowOtherGraduationType] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<GraduationSpeechFormValues>({
     resolver: zodResolver(graduationSpeechFormSchema),
@@ -42,9 +47,62 @@ const CreateSpeech = () => {
     },
   });
   
-  const onSubmit = (values: GraduationSpeechFormValues) => {
-    console.log("Form submitted:", values);
-    navigate("/review", { state: { formData: values } });
+  const onSubmit = async (values: GraduationSpeechFormValues) => {
+    try {
+      setIsSubmitting(true);
+      
+      // Save form data to Supabase
+      const { data, error } = await supabase
+        .from('graduation_speeches')
+        .insert({
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          institution: values.institution,
+          graduation_class: values.graduationClass,
+          graduation_type: values.graduationType,
+          graduation_type_other: values.graduationTypeOther,
+          tone: values.tone,
+          memories: values.memories,
+          acknowledgements: values.acknowledgements,
+          additional_info: values.additionalInfo,
+          themes: values.themes,
+          personal_background: values.personalBackground,
+          goals_lessons: values.goalsLessons,
+          quote: values.quote,
+          wishes: values.wishes
+        })
+        .select();
+      
+      if (error) {
+        console.error("Error saving to Supabase:", error);
+        toast({
+          title: "Error",
+          description: "There was a problem saving your speech data. Please try again.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Success - show toast and navigate
+      toast({
+        title: "Success",
+        description: "Your speech information has been saved!",
+      });
+      
+      console.log("Form submitted and saved to Supabase:", values);
+      navigate("/review", { state: { formData: values } });
+    } catch (error) {
+      console.error("Exception saving to Supabase:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem saving your speech data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // New function for final submission on the last tab
@@ -139,6 +197,7 @@ const CreateSpeech = () => {
             handlePrevious={handlePrevious} 
             handleNext={handleNext}
             onFinalSubmit={handleFinalSubmit}
+            isSubmitting={isSubmitting}
           />
         </form>
       </Form>
