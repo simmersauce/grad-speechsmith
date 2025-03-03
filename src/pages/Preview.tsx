@@ -108,9 +108,9 @@ const Preview = () => {
         >
           <Card className="p-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-4">Your Generated Speech</h2>
+              <h2 className="text-2xl font-bold mb-4">Your speech is ready! 🎓</h2>
               <p className="text-gray-600">
-                Preview your AI-generated graduation speech below
+                Your AI-crafted graduation speech is ready to be unlocked below.
               </p>
             </div>
 
