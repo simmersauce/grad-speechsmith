@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,6 +15,9 @@ const Preview = () => {
   const [speech, setSpeech] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState(null);
+  
+  // Preview character limit constant
+  const PREVIEW_CHAR_LIMIT = 400;
 
   useEffect(() => {
     // Get formData from location state or sessionStorage
@@ -70,6 +74,10 @@ const Preview = () => {
 
   if (!formData) return null;
 
+  // Determine displayed speech content and whether to show blur effect
+  const displayedSpeech = speech.substring(0, PREVIEW_CHAR_LIMIT);
+  const hasMoreContent = speech.length > PREVIEW_CHAR_LIMIT;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary/20 py-16">
       <div className="container max-w-3xl mx-auto px-4">
@@ -99,7 +107,23 @@ const Preview = () => {
                 className="prose prose-lg max-w-none"
               >
                 <div className="bg-white p-8 rounded-lg shadow-sm">
-                  <div className="whitespace-pre-wrap">{speech}</div>
+                  <div className="whitespace-pre-wrap">
+                    {displayedSpeech}
+                    {hasMoreContent && (
+                      <>
+                        <span className="text-gray-400">...</span>
+                        <div className="relative mt-4">
+                          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white opacity-80" />
+                          <div className="blur-sm text-gray-400 select-none">
+                            {speech.substring(PREVIEW_CHAR_LIMIT, PREVIEW_CHAR_LIMIT + 200)}...
+                          </div>
+                        </div>
+                        <div className="text-center mt-4">
+                          <p className="text-primary font-medium">Unlock the full speech to view more</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             )}
