@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Sparkles, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { TEST_MODE, dummyGeneratedSpeech } from "@/utils/testMode";
 
 const Preview = () => {
   const location = useLocation();
@@ -44,6 +45,15 @@ const Preview = () => {
     const generateSpeech = async () => {
       try {
         setIsLoading(true);
+        
+        // If in test mode, use dummy speech after a slight delay to simulate API call
+        if (TEST_MODE) {
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          setSpeech(dummyGeneratedSpeech);
+          setIsLoading(false);
+          return;
+        }
         
         // Call the Supabase Edge Function
         const { data: responseData, error } = await supabase.functions.invoke('generate-speech', {

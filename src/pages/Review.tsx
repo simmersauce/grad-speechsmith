@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { TEST_MODE, dummyFormData } from "@/utils/testMode";
 
 const Review = () => {
   const location = useLocation();
@@ -13,6 +14,15 @@ const Review = () => {
 
   // Get formData from location state when component mounts
   useEffect(() => {
+    // If in test mode, use dummy form data
+    if (TEST_MODE) {
+      setFormData(dummyFormData);
+      // Store dummy form data in sessionStorage too
+      sessionStorage.setItem('speechFormData', JSON.stringify(dummyFormData));
+      return;
+    }
+    
+    // Normal functionality for non-test mode
     if (location.state?.formData) {
       setFormData(location.state.formData);
       // Store formData in sessionStorage to persist it across navigation

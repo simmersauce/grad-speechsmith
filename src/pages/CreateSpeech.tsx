@@ -16,6 +16,7 @@ import TabHeader from "@/components/speech-form/TabHeader";
 import FormNavigation from "@/components/speech-form/FormNavigation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TEST_MODE, dummyFormData } from "@/utils/testMode";
 
 const CreateSpeech = () => {
   const navigate = useNavigate();
@@ -50,6 +51,21 @@ const CreateSpeech = () => {
   });
   
   useEffect(() => {
+    // If in test mode, pre-fill form with dummy data
+    if (TEST_MODE) {
+      Object.entries(dummyFormData).forEach(([key, value]) => {
+        if (value) {
+          form.setValue(key as any, value as any);
+        }
+      });
+      setUserInputs(dummyFormData);
+      if (dummyFormData.graduationType === 'other') {
+        setShowOtherGraduationType(true);
+      }
+      return;
+    }
+    
+    // Normal functionality for non-test mode
     let savedData;
     
     if (location.state?.formData) {
@@ -92,6 +108,30 @@ const CreateSpeech = () => {
     try {
       setIsSubmitting(true);
       
+      // If in test mode, skip the database submission and proceed directly
+      if (TEST_MODE) {
+        toast({
+          title: "Success",
+          description: "Test mode: Your speech information has been saved!",
+        });
+        
+        // Store the form data in session storage
+        sessionStorage.setItem('speechFormData', JSON.stringify({
+          formData: values,
+          formId: "test-id-123"
+        }));
+        
+        navigate("/review", { 
+          state: { 
+            formData: values,
+            formId: "test-id-123"
+          } 
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Normal functionality for non-test mode
       const speechData = {
         name: values.name,
         email: values.email,
