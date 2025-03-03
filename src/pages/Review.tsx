@@ -56,7 +56,7 @@ const Review = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-secondary-light py-16">
+    <div className="min-h-screen secondary py-16">
       <div className="container max-w-2xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
