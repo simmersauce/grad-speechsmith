@@ -89,7 +89,7 @@ const Preview = () => {
   const hasMoreContent = speech.length > PREVIEW_CHAR_LIMIT;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-secondary/20 py-16">
+    <div className="min-h-screen bg-secondary-light py-16">
       <div className="container max-w-3xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
