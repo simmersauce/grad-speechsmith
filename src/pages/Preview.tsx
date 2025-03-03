@@ -4,10 +4,43 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Sparkles, Check, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TEST_MODE, dummyGeneratedSpeech } from "@/utils/testMode";
+
+// Testimonial data
+const testimonials = [
+  {
+    text: "Delivering a speech to my entire graduating class felt overwhelming, but Toastie made it so much easier. They helped me craft a speech that was both inspiring and personal, capturing our shared journey perfectly. It was a moment I'll never forget.",
+    type: "Valedictorian"
+  },
+  {
+    text: "Speaking at the graduation was such an honor, but I didn't know where to begin. Toastie helped me organize my ideas into a speech that was motivational and heartfelt. The feedback I received after the event was incredible!",
+    type: "Guest Speaker"
+  },
+  {
+    text: "As an alumnus, I wanted to inspire the next generation, but I wasn't sure how to put my thoughts into words. Toastie created a speech that celebrated their accomplishments and encouraged them to embrace the future with confidence. It was perfect.",
+    type: "Alumni"
+  },
+  {
+    text: "Toastie turned my scattered thoughts into a powerful speech that brought my classmates to their feet. It celebrated our achievements and gave us all a moment to reflect on everything we've accomplished together.",
+    type: "Student"
+  }
+];
+
+// Testimonial component
+const TestimonialCard = ({ text, type }: { text: string; type: string }) => (
+  <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
+    <div className="flex mb-2">
+      {[...Array(5)].map((_, i) => (
+        <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+      ))}
+    </div>
+    <p className="text-sm sm:text-base mb-4 italic">"{text}"</p>
+    <p className="text-xs sm:text-sm font-medium text-primary">— {type} Speech</p>
+  </Card>
+);
 
 const Preview = () => {
   const location = useLocation();
@@ -96,7 +129,7 @@ const Preview = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="p-4 sm:p-8">
+          <Card className="p-4 sm:p-8 mb-6">
             <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4">
                 {isLoading ? "Generating your speech" : "Your speech is ready! 🎓"}
@@ -154,45 +187,89 @@ const Preview = () => {
             </div>
           </Card>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-6 sm:mt-8"
-          >
-            <Card className="p-4 sm:p-8 text-center max-w-md mx-auto">
-              <h2 className="text-xl sm:text-2xl font-bold mb-2">Unlock your speech</h2>
-              <p className="text-primary font-bold text-lg sm:text-xl mb-4 sm:mb-6">29.99 USD</p>
-              
-              <ul className="space-y-2 sm:space-y-3 text-left max-w-md mx-auto mb-6 sm:mb-8 text-sm sm:text-base">
-                {[
-                  "3 unique AI generated speech drafts",
-                  "One-time payment",
-                  "Lifetime access to your drafts",
-                  "100% money-back guarantee",
-                  "Delivered to your email in minutes",
-                  "No sign up required"
-                ].map((benefit, index) => (
-                  <li key={index} className="flex items-start">
-                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
-                    <span>{benefit}</span>
-                  </li>
+          {/* Conditional rendering of payment card and testimonials */}
+          {isLoading ? (
+            // Show testimonials while loading
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-6 sm:mt-8"
+            >
+              <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-center">What our users say</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {testimonials.map((testimonial, index) => (
+                  <TestimonialCard 
+                    key={index} 
+                    text={testimonial.text} 
+                    type={testimonial.type} 
+                  />
                 ))}
-              </ul>
-              
-              <Button 
-                onClick={() => {
-                  toast({
-                    title: "Coming Soon",
-                    description: "Payment integration will be added in the next update!",
-                  });
-                }}
-                className="bg-primary hover:bg-primary/90 w-full py-4 sm:py-6 text-base sm:text-lg"
+              </div>
+            </motion.div>
+          ) : (
+            // Show payment card followed by testimonials after loading
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="mt-6 sm:mt-8 mb-8 sm:mb-12"
               >
-                Unlock Speech
-              </Button>
-            </Card>
-          </motion.div>
+                <Card className="p-4 sm:p-8 text-center max-w-md mx-auto">
+                  <h2 className="text-xl sm:text-2xl font-bold mb-2">Unlock your speech</h2>
+                  <p className="text-primary font-bold text-lg sm:text-xl mb-4 sm:mb-6">29.99 USD</p>
+                  
+                  <ul className="space-y-2 sm:space-y-3 text-left max-w-md mx-auto mb-6 sm:mb-8 text-sm sm:text-base">
+                    {[
+                      "3 unique AI generated speech drafts",
+                      "One-time payment",
+                      "Lifetime access to your drafts",
+                      "100% money-back guarantee",
+                      "Delivered to your email in minutes",
+                      "No sign up required"
+                    ].map((benefit, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Button 
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Payment integration will be added in the next update!",
+                      });
+                    }}
+                    className="bg-primary hover:bg-primary/90 w-full py-4 sm:py-6 text-base sm:text-lg"
+                  >
+                    Unlock Speech
+                  </Button>
+                </Card>
+              </motion.div>
+
+              {/* Testimonials after payment card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="mb-8"
+              >
+                <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-center">What our users say</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {testimonials.map((testimonial, index) => (
+                    <TestimonialCard 
+                      key={index} 
+                      text={testimonial.text} 
+                      type={testimonial.type} 
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          )}
         </motion.div>
       </div>
     </div>
