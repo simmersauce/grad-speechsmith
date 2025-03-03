@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Preview = () => {
@@ -132,7 +132,7 @@ const Preview = () => {
               </motion.div>
             )}
 
-            <div className="flex justify-between items-center mt-8">
+            <div className="flex justify-start items-center mt-8">
               <Button
                 variant="outline"
                 onClick={() => navigate("/review", { state: { formData } })}
@@ -141,19 +141,48 @@ const Preview = () => {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Review
               </Button>
-              <Button
+            </div>
+          </Card>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-8"
+          >
+            <Card className="p-8 text-center">
+              <h2 className="text-2xl font-bold mb-2">Unlock your speech</h2>
+              <p className="text-primary font-bold text-xl mb-6">29.99 USD</p>
+              
+              <ul className="space-y-3 text-left max-w-md mx-auto mb-8">
+                {[
+                  "3 unique AI generated speech drafts",
+                  "One-time payment",
+                  "Lifetime access to your drafts",
+                  "100% money-back guarantee",
+                  "Delivered to your email in minutes",
+                  "No sign up required"
+                ].map((benefit, index) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="w-5 h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Button 
                 onClick={() => {
                   toast({
                     title: "Coming Soon",
                     description: "Payment integration will be added in the next update!",
                   });
                 }}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90 w-full py-6 text-lg"
               >
-                Purchase Speech ($19.99)
+                Unlock Speech
               </Button>
-            </div>
-          </Card>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </div>
