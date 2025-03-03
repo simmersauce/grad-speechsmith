@@ -13,26 +13,46 @@ const Preview = () => {
   const { toast } = useToast();
   const [speech, setSpeech] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const { formData } = location.state || {};
+  const [formData, setFormData] = useState(null);
 
   useEffect(() => {
-    if (!formData) {
+    // Get formData from location state or sessionStorage
+    let data;
+    if (location.state?.formData) {
+      data = location.state.formData;
+      // Store in sessionStorage for persistence
+      sessionStorage.setItem('speechFormData', JSON.stringify(data));
+    } else {
+      // Try to retrieve from sessionStorage
+      const storedData = sessionStorage.getItem('speechFormData');
+      if (storedData) {
+        data = JSON.parse(storedData);
+      }
+    }
+
+    if (!data) {
       navigate("/create");
       return;
     }
 
+    setFormData(data);
+
     const generateSpeech = async () => {
       try {
         setIsLoading(true);
-        const prompt = `Generate an inspiring graduation speech for ${formData.name} who is graduating from ${
-          formData.school
-        } (${formData.graduationType}). Include their key achievements: ${
-          formData.keyAchievements
-        }, future aspirations: ${formData.futureAspirations}, and memorable experience: ${
-          formData.memorableExperience
-        }. Also mention special thanks to: ${
-          formData.thanksTo
-        }. The speech should be motivational, personal, and around 3-4 paragraphs long.`;
+        // Use formData to construct the prompt
+        const prompt = `Generate an inspiring graduation speech for ${data.name} who is graduating from ${
+          data.institution
+        } (${data.graduationType}). Include their role: ${
+          data.role
+        }, personal background: ${data.personalBackground || "not specified"}, 
+        tone: ${data.tone}, themes: ${data.themes || "not specified"}, 
+        memories: ${data.memories || "not specified"}, 
+        goals and lessons: ${data.goalsLessons || "not specified"}, 
+        and acknowledgements: ${data.acknowledgements || "not specified"}. 
+        Include this quote if provided: ${data.quote || ""}. 
+        Also include these wishes: ${data.wishes || "not specified"}.
+        The speech should be motivational, personal, and around 3-4 paragraphs long.`;
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
@@ -57,8 +77,8 @@ const Preview = () => {
           throw new Error("Failed to generate speech");
         }
 
-        const data = await response.json();
-        setSpeech(data.choices[0].message.content);
+        const responseData = await response.json();
+        setSpeech(responseData.choices[0].message.content);
       } catch (error) {
         console.error("Error generating speech:", error);
         toast({
@@ -66,13 +86,15 @@ const Preview = () => {
           description: "Failed to generate speech. Please try again.",
           variant: "destructive",
         });
+        // Set a placeholder message when generation fails
+        setSpeech("We couldn't generate your speech at this time. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     };
 
     generateSpeech();
-  }, [formData, navigate, toast]);
+  }, [navigate, toast, location.state]);
 
   if (!formData) return null;
 
@@ -113,7 +135,7 @@ const Preview = () => {
             <div className="flex justify-between items-center mt-8">
               <Button
                 variant="outline"
-                onClick={() => navigate("/review")}
+                onClick={() => navigate("/review", { state: { formData } })}
                 className="flex items-center"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

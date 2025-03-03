@@ -4,14 +4,32 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Review = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { formData } = location.state || {};
+  const [formData, setFormData] = useState(null);
+
+  // Get formData from location state when component mounts
+  useEffect(() => {
+    if (location.state?.formData) {
+      setFormData(location.state.formData);
+      // Store formData in sessionStorage to persist it across navigation
+      sessionStorage.setItem('speechFormData', JSON.stringify(location.state.formData));
+    } else {
+      // Try to get formData from sessionStorage if not in location state
+      const storedData = sessionStorage.getItem('speechFormData');
+      if (storedData) {
+        setFormData(JSON.parse(storedData));
+      } else {
+        // If no data is found, navigate to create page
+        navigate("/create");
+      }
+    }
+  }, [location.state, navigate]);
 
   if (!formData) {
-    navigate("/create");
     return null;
   }
 
@@ -64,7 +82,7 @@ const Review = () => {
             <div className="flex justify-between mt-8">
               <Button
                 variant="outline"
-                onClick={() => navigate("/create")}
+                onClick={() => navigate("/create", { state: { formData } })}
                 className="flex items-center"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

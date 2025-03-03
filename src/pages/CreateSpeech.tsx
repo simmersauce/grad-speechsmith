@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const CreateSpeech = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("1");
   const [userInputs, setUserInputs] = useState<Partial<GraduationSpeechFormValues>>({});
@@ -47,11 +47,36 @@ const CreateSpeech = () => {
     },
   });
   
+  useEffect(() => {
+    let savedData;
+    
+    if (location.state?.formData) {
+      savedData = location.state.formData;
+    } else {
+      const storedData = sessionStorage.getItem('speechFormData');
+      if (storedData) {
+        savedData = JSON.parse(storedData);
+      }
+    }
+    
+    if (savedData) {
+      Object.entries(savedData).forEach(([key, value]) => {
+        if (value) {
+          form.setValue(key as any, value as any);
+        }
+      });
+      
+      setUserInputs(savedData);
+      if (savedData.graduationType === 'other') {
+        setShowOtherGraduationType(true);
+      }
+    }
+  }, [location.state, form]);
+  
   const onSubmit = async (values: GraduationSpeechFormValues) => {
     try {
       setIsSubmitting(true);
       
-      // Save form data to Supabase
       const { data, error } = await supabase
         .from('graduation_speeches')
         .insert({
@@ -85,7 +110,6 @@ const CreateSpeech = () => {
         return;
       }
       
-      // Success - show toast and navigate
       toast({
         title: "Success",
         description: "Your speech information has been saved!",
@@ -105,7 +129,6 @@ const CreateSpeech = () => {
     }
   };
 
-  // New function for final submission on the last tab
   const handleFinalSubmit = () => {
     form.handleSubmit(onSubmit)();
   };
@@ -118,13 +141,11 @@ const CreateSpeech = () => {
       
       let isValid = true;
       if (currentTabNumber === 1) {
-        // Validate fields on tab 1
         isValid = await form.trigger([
           "name", "email", "role", "institution", "graduationClass", "graduationType",
           ...(showOtherGraduationType ? ["graduationTypeOther" as const] : [])
         ] as const);
       } else if (currentTabNumber === 2) {
-        // Validate fields on tab 2
         isValid = await form.trigger(["tone"] as const);
       }
       
@@ -162,7 +183,6 @@ const CreateSpeech = () => {
       </div>
 
       <Form {...form}>
-        {/* Remove the onSubmit from the form element */}
         <form>
           <div className="mb-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
