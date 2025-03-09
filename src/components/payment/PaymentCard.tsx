@@ -13,9 +13,10 @@ interface PaymentCardProps {
   customerEmail: string;
   setCustomerEmail: (email: string) => void;
   formData: any;
+  onPaymentStart?: () => void;
 }
 
-const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardProps) => {
+const PaymentCard = ({ customerEmail, setCustomerEmail, formData, onPaymentStart }: PaymentCardProps) => {
   const { toast } = useToast();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState("");
@@ -26,12 +27,16 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardP
     if (redirectUrl) {
       const redirectTimer = setTimeout(() => {
         console.log("Redirecting to:", redirectUrl);
+        // Call the onPaymentStart callback right before redirecting
+        if (onPaymentStart) {
+          onPaymentStart();
+        }
         window.location.assign(redirectUrl);
       }, 500);
 
       return () => clearTimeout(redirectTimer);
     }
-  }, [redirectUrl]);
+  }, [redirectUrl, onPaymentStart]);
 
   // Add timeout to reset loading state in case of stuck processing
   useEffect(() => {
@@ -146,6 +151,19 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardP
     }
   };
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerEmail(e.target.value);
+    // Clear any previous payment errors when email changes
+    if (paymentError) {
+      setPaymentError("");
+    }
+  };
+  
   const handleRetry = () => {
     setPaymentError("");
     handlePurchase();

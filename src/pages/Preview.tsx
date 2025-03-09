@@ -21,6 +21,7 @@ const Preview = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState(null);
   const [customerEmail, setCustomerEmail] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     // Get formData from location state or sessionStorage
@@ -90,6 +91,11 @@ const Preview = () => {
 
   if (!formData) return null;
 
+  // When a payment is initiated and we're about to redirect to Stripe
+  const handlePaymentRedirect = () => {
+    setIsRedirecting(true);
+  };
+
   return (
     <div className="min-h-screen secondary py-8 sm:py-16">
       <div className="container max-w-3xl mx-auto px-4">
@@ -101,26 +107,26 @@ const Preview = () => {
           <Card className="p-4 sm:p-8 mb-6">
             <SpeechPreview 
               speech={speech} 
-              isLoading={isLoading} 
+              isLoading={isLoading && !isRedirecting} 
               formData={formData} 
               previewCharLimit={PREVIEW_CHAR_LIMIT}
             />
           </Card>
 
-          {/* Conditional rendering of payment card and testimonials */}
-          {isLoading ? (
-            // Show testimonials while loading
-            <TestimonialSection />
-          ) : (
-            // Show payment card followed by testimonials after loading
+          {/* Show payment card and testimonials when speech is loaded */}
+          {!isLoading || isRedirecting ? (
             <>
               <PaymentCard 
                 customerEmail={customerEmail} 
                 setCustomerEmail={setCustomerEmail} 
-                formData={formData} 
+                formData={formData}
+                onPaymentStart={handlePaymentRedirect}
               />
               <TestimonialSection />
             </>
+          ) : (
+            // Show testimonials while loading
+            <TestimonialSection />
           )}
         </motion.div>
       </div>
