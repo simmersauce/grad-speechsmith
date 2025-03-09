@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -193,7 +194,8 @@ const Preview = () => {
 
       console.log("Payment session created, redirecting to:", data.url);
       
-      // Use window.location.href for a full page redirect to Stripe
+      // Directly redirect to Stripe checkout instead of using window.location.href
+      // This ensures a clean navigation
       window.location.href = data.url;
       
     } catch (error: any) {

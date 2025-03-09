@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 // Get environment variables
@@ -93,7 +94,7 @@ serve(async (req) => {
       const origin = req.headers.get("origin") || "https://lovable.dev";
       console.log("Origin for redirect URLs:", origin);
       
-      // Create Stripe checkout session
+      // Create Stripe checkout session with explicit success and cancel URLs
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
