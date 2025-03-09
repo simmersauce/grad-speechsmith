@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, Loader2, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { TEST_MODE } from "@/utils/testMode";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -17,9 +18,31 @@ const PaymentSuccess = () => {
   
   // Get the session ID from the URL
   const sessionId = searchParams.get("session_id");
+  const isTestMode = TEST_MODE && searchParams.get("test") === "true";
 
   useEffect(() => {
-    // Fetch the customer reference from the database using the session ID
+    // Special handling for test mode
+    if (isTestMode) {
+      const testReference = localStorage.getItem('test_customer_reference');
+      if (testReference) {
+        setCustomerReference(testReference);
+      }
+      
+      // Simulate a loading state for a better user experience
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+        
+        // Show a success toast
+        toast({
+          title: "Test Payment Successful!",
+          description: "This is a test. In a real scenario, speech drafts would be delivered to your email.",
+        });
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // Normal functionality for real payments
     const fetchCustomerReference = async () => {
       if (!sessionId) return;
       
@@ -54,7 +77,7 @@ const PaymentSuccess = () => {
     fetchCustomerReference();
     
     return () => clearTimeout(timer);
-  }, [toast, sessionId]);
+  }, [toast, sessionId, isTestMode]);
 
   // Copy customer reference to clipboard
   const copyReferenceToClipboard = () => {
@@ -79,15 +102,19 @@ const PaymentSuccess = () => {
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                <h2 className="text-xl sm:text-2xl font-bold mb-2">Processing your payment</h2>
-                <p className="text-gray-600">Please wait while we confirm your payment...</p>
+                <h2 className="text-xl sm:text-2xl font-bold mb-2">{isTestMode ? "Simulating Payment" : "Processing your payment"}</h2>
+                <p className="text-gray-600">{isTestMode ? "Please wait while we simulate a successful payment..." : "Please wait while we confirm your payment..."}</p>
               </div>
             ) : (
               <>
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-                <h2 className="text-2xl sm:text-3xl font-bold mb-3">Payment Successful!</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-3">
+                  {isTestMode ? "Test Payment Successful!" : "Payment Successful!"}
+                </h2>
                 <p className="text-lg text-gray-600 mb-6">
-                  Thank you for your purchase. Your speech drafts are being generated and will be delivered to your email shortly.
+                  {isTestMode 
+                    ? "This is a test. In a real scenario, your speech drafts would be delivered to your email shortly."
+                    : "Thank you for your purchase. Your speech drafts are being generated and will be delivered to your email shortly."}
                 </p>
                 
                 {customerReference && (
@@ -133,6 +160,7 @@ const PaymentSuccess = () => {
           
           <p className="text-center text-gray-500 text-sm mt-6">
             Order reference: {customerReference || (sessionId ? sessionId.substring(0, 8) + '...' : 'Processing')}
+            {isTestMode && " (Test Mode)"}
           </p>
         </motion.div>
       </div>

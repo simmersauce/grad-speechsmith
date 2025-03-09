@@ -6,12 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Mail } from "lucide-react";
 import { TEST_MODE, dummyFormData, dummyGeneratedSpeech } from "@/utils/testMode";
 
 const EmailTestTool = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Create mock speech versions based on the dummy generated speech
   const createMockSpeechVersions = () => {
@@ -28,6 +31,9 @@ const EmailTestTool = () => {
   };
 
   const handleSendTestEmail = async () => {
+    // Reset error state
+    setError(null);
+    
     if (!email) {
       toast({
         title: "Email Required",
@@ -55,6 +61,7 @@ const EmailTestTool = () => {
       
       // Create mock data
       const mockPurchaseId = `test-${Date.now()}`;
+      const mockCustomerReference = `GSW-TEST-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
       const mockSpeechVersions = createMockSpeechVersions();
       
       toast({
@@ -68,7 +75,8 @@ const EmailTestTool = () => {
           email,
           formData: dummyFormData,
           speechVersions: mockSpeechVersions,
-          purchaseId: mockPurchaseId
+          purchaseId: mockPurchaseId,
+          customerReference: mockCustomerReference
         }
       });
 
@@ -81,14 +89,16 @@ const EmailTestTool = () => {
       
       toast({
         title: "Test Email Sent",
-        description: `Email with test speech drafts and PDF attachments has been sent to ${email}. Please check your inbox.`,
+        description: `Email with test speech drafts has been sent to ${email}. Reference number: ${mockCustomerReference}`,
       });
     } catch (error: any) {
       console.error("Error sending test email:", error);
       
+      setError(error.message || "Failed to send test email. Please try again.");
+      
       toast({
         title: "Email Sending Error",
-        description: error.message || "Failed to send test email. Please try again.",
+        description: "Something went wrong. Check the error details below.",
         variant: "destructive",
       });
     } finally {
@@ -101,10 +111,21 @@ const EmailTestTool = () => {
 
   return (
     <Card className="p-4 sm:p-6 max-w-md mx-auto my-8 bg-amber-50 border-amber-200">
-      <h3 className="text-lg font-semibold mb-4">Email Testing Tool</h3>
+      <h3 className="text-lg font-semibold mb-4 flex items-center">
+        <Mail className="w-5 h-5 mr-2" /> Email Testing Tool
+      </h3>
       <p className="text-sm text-amber-800 mb-4">
-        This tool will send a test email with dummy speech drafts and PDF attachments. Only visible in test mode.
+        This tool will send a test email with dummy speech drafts, PDF attachments, and a customer reference number. Only visible in test mode.
       </p>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="mb-4">
         <Label htmlFor="test-email" className="block text-sm font-medium mb-1">
