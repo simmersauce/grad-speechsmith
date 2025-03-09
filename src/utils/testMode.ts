@@ -1,6 +1,5 @@
-
 // Test mode flag - set to true to enable test mode
-export const TEST_MODE = false;
+export const TEST_MODE = true;
 
 // Dummy form data for testing
 export const dummyFormData = {

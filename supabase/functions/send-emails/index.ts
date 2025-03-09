@@ -20,6 +20,8 @@ serve(async (req) => {
 
     console.log("Sending emails to:", email);
     console.log("For purchase ID:", purchaseId);
+    console.log("Form data:", formData);
+    console.log("Speech versions count:", speechVersions.length);
     
     // Generate HTML for speech versions
     let speechsHtml = '';
