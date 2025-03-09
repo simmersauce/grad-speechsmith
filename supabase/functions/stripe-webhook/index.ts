@@ -24,6 +24,11 @@ const stripe = new Stripe(stripeSecretKey || "", {
 // Initialize Supabase client
 const supabase = createClient(supabaseUrl || "", supabaseKey || "");
 
+// Function to generate a customer reference
+const generateCustomerReference = () => {
+  return `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -123,6 +128,10 @@ serve(async (req) => {
       
       console.log("Customer email:", customerEmail);
       
+      // Generate a unique customer reference
+      const customerReference = generateCustomerReference();
+      console.log("Generated customer reference:", customerReference);
+      
       // Save purchase information to database
       const { data: purchaseData, error: purchaseError } = await supabase
         .from('speech_purchases')
@@ -131,7 +140,8 @@ serve(async (req) => {
           payment_status: 'completed',
           customer_email: customerEmail,
           amount_paid: session.amount_total / 100, // Convert from cents
-          form_data: formData
+          form_data: formData,
+          customer_reference: customerReference
         })
         .select();
           

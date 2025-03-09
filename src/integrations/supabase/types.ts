@@ -96,6 +96,124 @@ export type Database = {
         }
         Relationships: []
       }
+      speech_deliveries: {
+        Row: {
+          created_at: string
+          customer_email: string
+          file_name: string
+          id: string
+          pdf_data: string
+          purchase_id: string
+          tone: string
+          version_type: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          file_name: string
+          id?: string
+          pdf_data: string
+          purchase_id: string
+          tone: string
+          version_type: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          file_name?: string
+          id?: string
+          pdf_data?: string
+          purchase_id?: string
+          tone?: string
+          version_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speech_deliveries_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "speech_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speech_purchases: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          customer_email: string
+          customer_reference: string
+          emails_sent: boolean
+          form_data: Json
+          id: string
+          payment_status: string
+          speeches_generated: boolean
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount_paid: number
+          created_at?: string
+          customer_email: string
+          customer_reference?: string
+          emails_sent?: boolean
+          form_data: Json
+          id?: string
+          payment_status: string
+          speeches_generated?: boolean
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          customer_email?: string
+          customer_reference?: string
+          emails_sent?: boolean
+          form_data?: Json
+          id?: string
+          payment_status?: string
+          speeches_generated?: boolean
+          stripe_session_id?: string | null
+        }
+        Relationships: []
+      }
+      speech_versions: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          purchase_id: string
+          tone: string
+          version_number: number
+          version_type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          purchase_id: string
+          tone: string
+          version_number: number
+          version_type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          purchase_id?: string
+          tone?: string
+          version_number?: number
+          version_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speech_versions_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "speech_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
