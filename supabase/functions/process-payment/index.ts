@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -13,12 +12,6 @@ const corsHeaders = {
 const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-// Initialize Stripe
-const stripe = new Stripe(stripeSecretKey || "", {
-  httpClient: Stripe.createFetchHttpClient(),
-  apiVersion: '2023-10-16', // Specify the Stripe API version
-});
 
 // Initialize Supabase client
 const supabase = createClient(supabaseUrl || "", supabaseKey || "");
@@ -89,36 +82,40 @@ serve(async (req) => {
     const formDataId = storedData[0].id;
     console.log("Form data stored with ID:", formDataId);
 
-    // Create a payment session with Stripe
+    // Create a payment session with Stripe using direct API call
     try {
       const origin = req.headers.get("origin") || "https://lovable.dev";
       console.log("Origin for redirect URLs:", origin);
       
-      // Create Stripe checkout session with explicit success and cancel URLs
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: 'Graduation Speech Package',
-                description: '3 unique AI-generated speech drafts',
-              },
-              unit_amount: 2999, // $29.99 in cents
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/preview`,
-        customer_email: customerEmail,
-        metadata: {
-          formDataId: formDataId.toString()
-        }
+      // Create Stripe checkout session using fetch instead of the Stripe library
+      const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${stripeSecretKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          'payment_method_types[]': 'card',
+          'line_items[0][price_data][currency]': 'usd',
+          'line_items[0][price_data][product_data][name]': 'Graduation Speech Package',
+          'line_items[0][price_data][product_data][description]': '3 unique AI-generated speech drafts',
+          'line_items[0][price_data][unit_amount]': '2999',
+          'line_items[0][quantity]': '1',
+          'mode': 'payment',
+          'success_url': `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          'cancel_url': `${origin}/preview`,
+          'customer_email': customerEmail,
+          'metadata[formDataId]': formDataId.toString()
+        })
       });
 
+      if (!stripeResponse.ok) {
+        const errorData = await stripeResponse.json();
+        console.error("Stripe API error:", errorData);
+        throw new Error(`Stripe API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const session = await stripeResponse.json();
       console.log("Stripe session created successfully:", session.id);
       console.log("Checkout URL:", session.url);
 
@@ -139,7 +136,7 @@ serve(async (req) => {
       );
     } catch (stripeError: any) {
       console.error("Stripe error:", stripeError);
-      throw new Error(`Stripe error: ${stripeError.message}`);
+      throw new Error(`Stripe error: ${stripeError.message || 'Unknown error'}`);
     }
   } catch (error: any) {
     console.error("Error in process-payment function:", error);
