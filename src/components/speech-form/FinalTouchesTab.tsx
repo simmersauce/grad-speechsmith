@@ -34,7 +34,7 @@ const FinalTouchesTab = ({ form }: FinalTouchesTabProps) => {
         name="quote"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Favorite Quote (Optional)</FormLabel>
+            <FormLabel>Favorite Quote</FormLabel>
             <FormControl>
               <Textarea
                 placeholder="Share a quote that inspires you"
@@ -70,7 +70,7 @@ const FinalTouchesTab = ({ form }: FinalTouchesTabProps) => {
         name="additionalInfo"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Additional Information (Optional)</FormLabel>
+            <FormLabel>Additional Information</FormLabel>
             <FormControl>
               <Textarea
                 placeholder="Any other details that might help create your perfect speech"
