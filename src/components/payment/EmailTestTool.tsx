@@ -65,9 +65,12 @@ const EmailTestTool = () => {
       const mockSpeechVersions = createMockSpeechVersions();
       
       toast({
-        title: "Generating PDFs",
-        description: "Creating PDF attachments for your speech drafts...",
+        title: "Preparing Email",
+        description: "Sending your test graduation speech drafts...",
       });
+      
+      // Store the customer reference in localStorage for the payment success simulator
+      localStorage.setItem('test_customer_reference', customerReference);
       
       // Directly call the send-emails function
       const { data, error } = await supabase.functions.invoke('send-emails', {
@@ -115,7 +118,7 @@ const EmailTestTool = () => {
         <Mail className="w-5 h-5 mr-2" /> Email Testing Tool
       </h3>
       <p className="text-sm text-amber-800 mb-4">
-        This tool will send a test email with dummy speech drafts, PDF attachments, and a customer reference number. Only visible in test mode.
+        This tool will send a test email with speech drafts and a customer reference number. Only visible in test mode.
       </p>
       
       {error && (
@@ -158,7 +161,7 @@ const EmailTestTool = () => {
         disabled={isLoading}
         className="w-full"
       >
-        {isLoading ? "Sending..." : "Send Test Email with PDFs"}
+        {isLoading ? "Sending..." : "Send Test Email with Speeches"}
       </Button>
     </Card>
   );

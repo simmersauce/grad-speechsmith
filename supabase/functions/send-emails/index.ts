@@ -29,6 +29,15 @@ serve(async (req) => {
     console.log("Received email request for:", email);
     console.log("Purchase ID:", purchaseId);
     console.log("Customer reference:", customerReference);
+    console.log("Speech versions count:", speechVersions?.length || 0);
+    
+    if (!email) {
+      throw new Error("Email address is required");
+    }
+    
+    if (!speechVersions || !Array.isArray(speechVersions) || speechVersions.length === 0) {
+      throw new Error("Speech versions are required");
+    }
     
     let reference;
     
@@ -65,7 +74,9 @@ serve(async (req) => {
     }
     
     if (!reference) {
-      throw new Error("No customer reference available");
+      // Generate a fallback reference if none is available
+      reference = `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      console.log("Generated fallback customer reference:", reference);
     }
     
     // Prepare the email content with all speech versions
@@ -97,7 +108,7 @@ serve(async (req) => {
             <h1>Your Graduation Speech Drafts</h1>
           </div>
           <div class="content">
-            <p>Dear ${formData.name || 'Graduate'},</p>
+            <p>Dear ${formData?.name || 'Graduate'},</p>
             <p>Thank you for using our Graduation Speech Writer. We're excited to share your personalized speech drafts!</p>
             
             <h2>Your Customer Reference</h2>
@@ -106,13 +117,13 @@ serve(async (req) => {
             <h2>Speech Previews</h2>
             ${speechListHTML}
             
-            <p>Full versions of each speech are attached as PDF files. You can download, print, and practice with them at your convenience.</p>
+            <p>Full versions of each speech are included in this email. You can save, print, and practice with them at your convenience.</p>
             
             <h2>Speech Details</h2>
             <ul>
-              <li><strong>Institution:</strong> ${formData.institution || 'Your institution'}</li>
-              <li><strong>Graduation:</strong> ${formData.graduationClass || 'Your graduation'}</li>
-              <li><strong>Role:</strong> ${formData.role || 'Graduate'}</li>
+              <li><strong>Institution:</strong> ${formData?.institution || 'Your institution'}</li>
+              <li><strong>Graduation:</strong> ${formData?.graduationClass || 'Your graduation'}</li>
+              <li><strong>Role:</strong> ${formData?.role || 'Graduate'}</li>
             </ul>
             
             <p>Congratulations on your achievement! We wish you all the best for your graduation ceremony and future endeavors.</p>
@@ -124,25 +135,71 @@ serve(async (req) => {
       </html>
     `;
 
-    // For now in test mode, we'll send a simple email without attachments
-    console.log(`Sending email to ${email}`);
+    console.log(`Sending email to ${email} with reference ${reference}`);
     
-    // Send the email using Resend
-    const emailResult = await resend.emails.send({
+    // Since we can't directly generate PDFs in Edge Functions,
+    // we'll just include the full speech text in the email for now
+    const fullSpeeches = speechVersions.map((speech, index) => {
+      return {
+        from: "Graduation Speech Writer <speeches@resend.dev>",
+        to: [email],
+        subject: `Graduation Speech Draft ${index + 1}: ${speech.tone || 'Standard'} Tone - Ref: ${reference}`,
+        html: `
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+                .header { background-color: #f5f5f5; padding: 20px; text-align: center; }
+                .content { padding: 20px; }
+                .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; }
+                .speech { white-space: pre-wrap; line-height: 1.8; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>Graduation Speech - Version ${index + 1}</h1>
+                <p>Tone: ${speech.tone || 'Standard'}</p>
+              </div>
+              <div class="content">
+                <div class="speech">${speech.content}</div>
+              </div>
+              <div class="footer">
+                <p>© 2024 Graduation Speech Writer | Customer Reference: ${reference}</p>
+              </div>
+            </body>
+          </html>
+        `
+      };
+    });
+    
+    // Send the main email summary first
+    const mainEmailResult = await resend.emails.send({
       from: "Graduation Speech Writer <speeches@resend.dev>",
       to: [email],
       subject: `Your Graduation Speech Drafts - Reference: ${reference}`,
       html: emailHTML,
     });
     
-    console.log("Email sent successfully:", emailResult);
+    console.log("Main email sent successfully:", mainEmailResult);
+    
+    // Then send each individual speech as a separate email
+    const speechEmailPromises = fullSpeeches.map(speechEmail => 
+      resend.emails.send(speechEmail)
+    );
+    
+    // Wait for all emails to be sent
+    const speechEmailResults = await Promise.all(speechEmailPromises);
+    console.log(`All ${speechEmailResults.length} speech emails sent successfully`);
     
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: "Email sent successfully",
+        message: "Emails sent successfully",
         customerReference: reference,
-        emailResult
+        emailResults: {
+          main: mainEmailResult,
+          speeches: speechEmailResults
+        }
       }),
       { 
         status: 200,
