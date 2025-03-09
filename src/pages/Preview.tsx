@@ -49,6 +49,8 @@ const Preview = () => {
   const [speech, setSpeech] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState("");
   
   // Preview character limit constant
   const PREVIEW_CHAR_LIMIT = 400;
@@ -74,6 +76,10 @@ const Preview = () => {
     }
 
     setFormData(data);
+    // Use email from form data if available
+    if (data.email) {
+      setCustomerEmail(data.email);
+    }
 
     const generateSpeech = async () => {
       try {
@@ -114,6 +120,58 @@ const Preview = () => {
 
     generateSpeech();
   }, [navigate, toast, location.state]);
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerEmail(e.target.value);
+  };
+
+  const handlePurchase = async () => {
+    if (!customerEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to receive your speech drafts.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData) {
+      toast({
+        title: "Error",
+        description: "Form data is missing. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsProcessingPayment(true);
+      
+      // Call the process-payment edge function to create a Stripe checkout session
+      const { data, error } = await supabase.functions.invoke('process-payment', {
+        body: { 
+          formData,
+          customerEmail
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to process payment');
+      }
+
+      // Redirect to Stripe checkout page
+      window.location.href = data.url;
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      toast({
+        title: "Payment Error",
+        description: "Failed to process payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   if (!formData) return null;
 
@@ -236,16 +294,27 @@ const Preview = () => {
                     ))}
                   </ul>
                   
+                  <div className="mb-6">
+                    <label htmlFor="email" className="block text-left text-sm font-medium text-gray-700 mb-1">
+                      Email address (to receive your speeches)
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={customerEmail}
+                      onChange={handleEmailChange}
+                      className="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="your.email@example.com"
+                      required
+                    />
+                  </div>
+                  
                   <Button 
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Payment integration will be added in the next update!",
-                      });
-                    }}
+                    onClick={handlePurchase}
+                    disabled={isProcessingPayment}
                     className="bg-primary hover:bg-primary/90 w-full py-4 sm:py-6 text-base sm:text-lg"
                   >
-                    Unlock Speech
+                    {isProcessingPayment ? "Processing..." : "Unlock Speech"}
                   </Button>
                 </Card>
               </motion.div>

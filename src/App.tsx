@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import CreateSpeech from "./pages/CreateSpeech";
 import Review from "./pages/Review";
 import Preview from "./pages/Preview";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/create" element={<CreateSpeech />} />
           <Route path="/review" element={<Review />} />
           <Route path="/preview" element={<Preview />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
