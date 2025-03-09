@@ -100,7 +100,12 @@ serve(async (req) => {
         
         // Convert to base64 for attachment
         const pdfOutput = doc.output('arraybuffer');
-        const pdfBase64 = Buffer.from(pdfOutput).toString('base64');
+        
+        // Use Uint8Array instead of Buffer for Deno compatibility
+        const pdfBase64 = btoa(
+          new Uint8Array(pdfOutput)
+            .reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
         
         return {
           filename: `Speech_${index + 1}_${versionLabel}_Version.pdf`,
