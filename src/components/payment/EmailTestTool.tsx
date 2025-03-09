@@ -57,6 +57,11 @@ const EmailTestTool = () => {
       const mockPurchaseId = `test-${Date.now()}`;
       const mockSpeechVersions = createMockSpeechVersions();
       
+      toast({
+        title: "Generating PDFs",
+        description: "Creating PDF attachments for your speech drafts...",
+      });
+      
       // Directly call the send-emails function
       const { data, error } = await supabase.functions.invoke('send-emails', {
         body: {
@@ -76,7 +81,7 @@ const EmailTestTool = () => {
       
       toast({
         title: "Test Email Sent",
-        description: `Email with test speech drafts has been sent to ${email}. Please check your inbox.`,
+        description: `Email with test speech drafts and PDF attachments has been sent to ${email}. Please check your inbox.`,
       });
     } catch (error: any) {
       console.error("Error sending test email:", error);
@@ -98,7 +103,7 @@ const EmailTestTool = () => {
     <Card className="p-4 sm:p-6 max-w-md mx-auto my-8 bg-amber-50 border-amber-200">
       <h3 className="text-lg font-semibold mb-4">Email Testing Tool</h3>
       <p className="text-sm text-amber-800 mb-4">
-        This tool will send a test email with dummy speech drafts. Only visible in test mode.
+        This tool will send a test email with dummy speech drafts and PDF attachments. Only visible in test mode.
       </p>
       
       <div className="mb-4">
@@ -120,7 +125,7 @@ const EmailTestTool = () => {
         disabled={isLoading}
         className="w-full"
       >
-        {isLoading ? "Sending..." : "Send Test Email"}
+        {isLoading ? "Sending..." : "Send Test Email with PDFs"}
       </Button>
     </Card>
   );
