@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { GraduationSpeechFormValues } from "@/utils/formSchema";
+import { Asterisk } from "lucide-react";
 
 interface AboutYouTabProps {
   form: UseFormReturn<GraduationSpeechFormValues>;
@@ -23,7 +24,10 @@ const AboutYouTab = ({
         name="name"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Your Name</FormLabel>
+            <FormLabel className="flex items-center">
+              Your Name
+              <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+            </FormLabel>
             <FormControl>
               <Input placeholder="Enter your name" {...field} />
             </FormControl>
@@ -37,7 +41,10 @@ const AboutYouTab = ({
         name="email"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Your Email</FormLabel>
+            <FormLabel className="flex items-center">
+              Your Email
+              <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+            </FormLabel>
             <FormControl>
               <Input placeholder="Enter your email address" type="email" {...field} />
             </FormControl>
@@ -51,7 +58,10 @@ const AboutYouTab = ({
         name="role"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Your Speaking Role</FormLabel>
+            <FormLabel className="flex items-center">
+              Your Speaking Role
+              <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+            </FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
                 <SelectTrigger>
@@ -79,7 +89,10 @@ const AboutYouTab = ({
         name="institution"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Institution Name</FormLabel>
+            <FormLabel className="flex items-center">
+              Institution Name
+              <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+            </FormLabel>
             <FormControl>
               <Input placeholder="Name of your school or university" {...field} />
             </FormControl>
@@ -93,7 +106,10 @@ const AboutYouTab = ({
         name="graduationClass"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Graduating Class</FormLabel>
+            <FormLabel className="flex items-center">
+              Graduating Class
+              <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+            </FormLabel>
             <FormControl>
               <Input placeholder="Class of 2025" {...field} />
             </FormControl>
@@ -107,7 +123,10 @@ const AboutYouTab = ({
         name="graduationType"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Graduation Type</FormLabel>
+            <FormLabel className="flex items-center">
+              Graduation Type
+              <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+            </FormLabel>
             <Select onValueChange={handleGraduationTypeChange} defaultValue={field.value}>
               <FormControl>
                 <SelectTrigger>
@@ -133,7 +152,10 @@ const AboutYouTab = ({
           name="graduationTypeOther"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Please specify</FormLabel>
+              <FormLabel className="flex items-center">
+                Please specify
+                <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+              </FormLabel>
               <FormControl>
                 <Input placeholder="Enter your graduation type" {...field} />
               </FormControl>

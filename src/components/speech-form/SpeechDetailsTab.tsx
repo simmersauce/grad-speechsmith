@@ -4,6 +4,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { GraduationSpeechFormValues } from "@/utils/formSchema";
+import { Asterisk } from "lucide-react";
 
 interface SpeechDetailsTabProps {
   form: UseFormReturn<GraduationSpeechFormValues>;
@@ -17,7 +18,10 @@ const SpeechDetailsTab = ({ form }: SpeechDetailsTabProps) => {
         name="tone"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Desired Tone</FormLabel>
+            <FormLabel className="flex items-center">
+              Desired Tone
+              <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+            </FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
                 <SelectTrigger>
