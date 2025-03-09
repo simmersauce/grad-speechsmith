@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -194,7 +193,7 @@ const Preview = () => {
 
       console.log("Payment session created, redirecting to:", data.url);
       
-      // Redirect to Stripe checkout page
+      // Use window.location.href for a full page redirect to Stripe
       window.location.href = data.url;
       
     } catch (error: any) {
@@ -208,7 +207,6 @@ const Preview = () => {
         description: error.message || "Failed to process payment. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsProcessingPayment(false);
     }
   };

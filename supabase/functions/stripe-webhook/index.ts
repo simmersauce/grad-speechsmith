@@ -3,27 +3,65 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Get environment variables
+const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
+
 // Initialize Stripe
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+const stripe = new Stripe(stripeSecretKey || "", {
   httpClient: Stripe.createFetchHttpClient(),
+  apiVersion: '2023-10-16', // Specify the Stripe API version
 });
 
 // Initialize Supabase client
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
+const supabase = createClient(supabaseUrl || "", supabaseKey || "");
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204 
+    });
+  }
+
   const signature = req.headers.get("stripe-signature");
   
   if (!signature) {
     console.error("Missing stripe-signature header");
-    return new Response("Missing stripe-signature header", { status: 400 });
+    return new Response(
+      JSON.stringify({ error: "Missing stripe-signature header" }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 
   try {
+    // Check that required environment variables are set
+    if (!stripeSecretKey) {
+      console.error("Missing STRIPE_SECRET_KEY");
+      throw new Error("Server configuration error: Missing Stripe key");
+    }
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase credentials");
+      throw new Error("Server configuration error: Missing database credentials");
+    }
+
+    if (!endpointSecret) {
+      console.error("Missing STRIPE_WEBHOOK_SECRET");
+      throw new Error("Server configuration error: Missing webhook secret");
+    }
+
     const body = await req.text();
     console.log("Received webhook. Validating signature...");
     
@@ -36,7 +74,13 @@ serve(async (req) => {
       );
     } catch (err: any) {
       console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+      return new Response(
+        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     console.log(`Received Stripe event: ${event.type}`);
@@ -138,15 +182,21 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({ received: true }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error: any) {
     console.error("Error in stripe-webhook function:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Webhook Error" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });
