@@ -150,19 +150,6 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData, onPaymentStart
       setIsProcessingPayment(false);
     }
   };
-
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomerEmail(e.target.value);
-    // Clear any previous payment errors when email changes
-    if (paymentError) {
-      setPaymentError("");
-    }
-  };
   
   const handleRetry = () => {
     setPaymentError("");
