@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Index from './pages/Index';
@@ -16,7 +17,7 @@ const App = () => {
         <Route path="/create" element={<CreateSpeech />} />
         <Route path="/review" element={<Review />} />
         <Route path="/preview" element={<Preview />} />
-        <Route path="/success" element={<PaymentSuccess />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {/* Add the email test tool at the bottom of the app */}
