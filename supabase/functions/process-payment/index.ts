@@ -24,13 +24,17 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Process payment function called");
+    
     const { formData, customerEmail } = await req.json();
 
     if (!formData) {
+      console.error("Missing form data");
       throw new Error("Missing form data");
     }
 
     if (!customerEmail) {
+      console.error("Missing customer email");
       throw new Error("Missing customer email");
     }
 
@@ -51,6 +55,7 @@ serve(async (req) => {
     }
 
     if (!storedData || storedData.length === 0) {
+      console.error("No data returned after storing form data");
       throw new Error("No data returned after storing form data");
     }
 
@@ -59,6 +64,9 @@ serve(async (req) => {
 
     // Create a payment session with Stripe, using only the formDataId in metadata
     try {
+      const origin = req.headers.get("origin");
+      console.log("Origin for redirect URLs:", origin);
+      
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -75,8 +83,8 @@ serve(async (req) => {
           },
         ],
         mode: 'payment',
-        success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.headers.get("origin")}/preview`,
+        success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/preview`,
         customer_email: customerEmail,
         metadata: {
           formDataId: formDataId.toString() // Only store the ID as a reference
@@ -84,14 +92,17 @@ serve(async (req) => {
       });
 
       console.log("Stripe session created:", session.id);
+      console.log("Checkout URL:", session.url);
 
+      // Return the session ID and URL for the client to use
       return new Response(
         JSON.stringify({ 
           sessionId: session.id,
           url: session.url
         }),
         { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
         }
       );
     } catch (stripeError: any) {

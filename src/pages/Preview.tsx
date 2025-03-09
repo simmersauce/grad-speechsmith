@@ -8,6 +8,8 @@ import { ArrowLeft, Sparkles, Check, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TEST_MODE, dummyGeneratedSpeech } from "@/utils/testMode";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // Testimonial data
 const testimonials = [
@@ -122,6 +124,11 @@ const Preview = () => {
     generateSpeech();
   }, [navigate, toast, location.state]);
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCustomerEmail(e.target.value);
     // Clear any previous payment errors when email changes
@@ -143,9 +150,8 @@ const Preview = () => {
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(customerEmail)) {
+    // Email validation
+    if (!validateEmail(customerEmail)) {
       toast({
         title: "Invalid Email",
         description: "Please enter a valid email address.",
@@ -190,6 +196,7 @@ const Preview = () => {
       
       // Redirect to Stripe checkout page
       window.location.href = data.url;
+      
     } catch (error: any) {
       console.error("Error processing payment:", error);
       
@@ -328,10 +335,10 @@ const Preview = () => {
                   </ul>
                   
                   <div className="mb-6">
-                    <label htmlFor="email" className="block text-left text-sm font-medium text-gray-700 mb-1">
+                    <Label htmlFor="email" className="block text-left text-sm font-medium text-gray-700 mb-1">
                       Email address (to receive your speeches)
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       type="email"
                       id="email"
                       value={customerEmail}

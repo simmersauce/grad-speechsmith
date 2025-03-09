@@ -19,16 +19,25 @@ serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   
   if (!signature) {
+    console.error("Missing stripe-signature header");
     return new Response("Missing stripe-signature header", { status: 400 });
   }
 
   try {
     const body = await req.text();
-    const event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      endpointSecret
-    );
+    console.log("Received webhook. Validating signature...");
+    
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        endpointSecret
+      );
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+    }
 
     console.log(`Received Stripe event: ${event.type}`);
 
@@ -41,6 +50,7 @@ serve(async (req) => {
       const formDataId = session.metadata?.formDataId;
       
       if (!formDataId) {
+        console.error("No formDataId found in session metadata");
         throw new Error("No formDataId found in session metadata");
       }
       
@@ -59,6 +69,7 @@ serve(async (req) => {
       }
       
       if (!pendingData) {
+        console.error(`No pending form data found with ID: ${formDataId}`);
         throw new Error(`No pending form data found with ID: ${formDataId}`);
       }
       
