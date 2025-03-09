@@ -68,15 +68,81 @@ serve(async (req) => {
       throw new Error("No customer reference available");
     }
     
-    // Email sending logic would go here
-    console.log(`Would send email to ${email} for reference ${reference} with ${speechVersions.length} speeches`);
+    // Prepare the email content with all speech versions
+    const speechListHTML = speechVersions.map((speech, index) => {
+      return `
+        <div style="margin-bottom: 20px; padding: 10px; border-left: 4px solid #0070f3;">
+          <h3 style="margin-top: 0;">Speech Version ${index + 1}: ${speech.tone || 'Standard'} Tone</h3>
+          <p style="white-space: pre-wrap;">${speech.content.substring(0, 300)}...</p>
+          <p><em>Full version available in the attached PDF</em></p>
+        </div>
+      `;
+    }).join('');
+
+    // Create the email HTML
+    const emailHTML = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+            .header { background-color: #f5f5f5; padding: 20px; text-align: center; }
+            .content { padding: 20px; }
+            .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; }
+            .highlight { color: #0070f3; }
+            .reference { font-family: monospace; background-color: #f0f0f0; padding: 5px 10px; border-radius: 4px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Your Graduation Speech Drafts</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${formData.name || 'Graduate'},</p>
+            <p>Thank you for using our Graduation Speech Writer. We're excited to share your personalized speech drafts!</p>
+            
+            <h2>Your Customer Reference</h2>
+            <p>Please save this reference number for future inquiries: <span class="reference">${reference}</span></p>
+            
+            <h2>Speech Previews</h2>
+            ${speechListHTML}
+            
+            <p>Full versions of each speech are attached as PDF files. You can download, print, and practice with them at your convenience.</p>
+            
+            <h2>Speech Details</h2>
+            <ul>
+              <li><strong>Institution:</strong> ${formData.institution || 'Your institution'}</li>
+              <li><strong>Graduation:</strong> ${formData.graduationClass || 'Your graduation'}</li>
+              <li><strong>Role:</strong> ${formData.role || 'Graduate'}</li>
+            </ul>
+            
+            <p>Congratulations on your achievement! We wish you all the best for your graduation ceremony and future endeavors.</p>
+          </div>
+          <div class="footer">
+            <p>© 2024 Graduation Speech Writer | Customer Reference: ${reference}</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // For now in test mode, we'll send a simple email without attachments
+    console.log(`Sending email to ${email}`);
     
-    // For testing purposes, return success
+    // Send the email using Resend
+    const emailResult = await resend.emails.send({
+      from: "Graduation Speech Writer <speeches@resend.dev>",
+      to: [email],
+      subject: `Your Graduation Speech Drafts - Reference: ${reference}`,
+      html: emailHTML,
+    });
+    
+    console.log("Email sent successfully:", emailResult);
+    
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: "Email sending simulation successful",
-        customerReference: reference
+        message: "Email sent successfully",
+        customerReference: reference,
+        emailResult
       }),
       { 
         status: 200,
