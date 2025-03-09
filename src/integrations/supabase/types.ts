@@ -72,6 +72,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_form_data: {
+        Row: {
+          created_at: string | null
+          customer_email: string
+          form_data: Json
+          id: string
+          processed: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_email: string
+          form_data: Json
+          id?: string
+          processed?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_email?: string
+          form_data?: Json
+          id?: string
+          processed?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

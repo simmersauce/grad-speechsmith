@@ -38,11 +38,13 @@ serve(async (req) => {
       console.log("Processing completed checkout session:", session.id);
       
       // Get the formDataId from the session metadata
-      const formDataId = session.metadata.formDataId;
+      const formDataId = session.metadata?.formDataId;
       
       if (!formDataId) {
         throw new Error("No formDataId found in session metadata");
       }
+      
+      console.log("Looking up form data with ID:", formDataId);
       
       // Get the form data from our database
       const { data: pendingData, error: pendingError } = await supabase
@@ -53,7 +55,11 @@ serve(async (req) => {
         
       if (pendingError) {
         console.error("Error retrieving pending form data:", pendingError);
-        throw new Error("Failed to retrieve form data");
+        throw new Error(`Failed to retrieve form data: ${pendingError.message}`);
+      }
+      
+      if (!pendingData) {
+        throw new Error(`No pending form data found with ID: ${formDataId}`);
       }
       
       const formData = pendingData.form_data;
@@ -75,13 +81,26 @@ serve(async (req) => {
           
       if (purchaseError) {
         console.error("Error saving purchase:", purchaseError);
-        throw new Error("Failed to save purchase information");
+        throw new Error(`Failed to save purchase information: ${purchaseError.message}`);
       }
       
       console.log("Purchase saved successfully:", purchaseData[0].id);
       
+      // Update the pending_form_data record to mark it as processed
+      const { error: updateError } = await supabase
+        .from('pending_form_data')
+        .update({ processed: true })
+        .eq('id', formDataId);
+        
+      if (updateError) {
+        console.error("Error updating pending form data:", updateError);
+        // We'll continue even if this fails as it's not critical
+      }
+      
       // Generate the speeches using the generate-speeches endpoint
       try {
+        console.log("Triggering speech generation for purchase:", purchaseData[0].id);
+        
         const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speeches`, {
           method: "POST",
           headers: {
@@ -96,12 +115,15 @@ serve(async (req) => {
         });
         
         if (!generateResponse.ok) {
-          console.error("Failed to generate speeches:", await generateResponse.text());
+          const errorText = await generateResponse.text();
+          console.error("Failed to generate speeches:", errorText);
+          throw new Error(`Failed to generate speeches: ${errorText}`);
         } else {
           console.log("Speeches generation triggered successfully");
         }
-      } catch (generateError) {
+      } catch (generateError: any) {
         console.error("Error triggering speech generation:", generateError);
+        // We'll continue even if speech generation fails, as we can try again later
       }
     }
 
@@ -109,7 +131,7 @@ serve(async (req) => {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in stripe-webhook function:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Webhook Error" }),

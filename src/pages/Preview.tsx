@@ -51,6 +51,7 @@ const Preview = () => {
   const [formData, setFormData] = useState(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [customerEmail, setCustomerEmail] = useState("");
+  const [paymentError, setPaymentError] = useState("");
   
   // Preview character limit constant
   const PREVIEW_CHAR_LIMIT = 400;
@@ -123,13 +124,31 @@ const Preview = () => {
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCustomerEmail(e.target.value);
+    // Clear any previous payment errors when email changes
+    if (paymentError) {
+      setPaymentError("");
+    }
   };
 
   const handlePurchase = async () => {
+    // Clear any previous payment errors
+    setPaymentError("");
+    
     if (!customerEmail) {
       toast({
         title: "Email Required",
         description: "Please enter your email address to receive your speech drafts.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customerEmail)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
         variant: "destructive",
       });
       return;
@@ -147,6 +166,8 @@ const Preview = () => {
     try {
       setIsProcessingPayment(true);
       
+      console.log("Starting payment process with email:", customerEmail);
+      
       // Call the process-payment edge function to create a Stripe checkout session
       const { data, error } = await supabase.functions.invoke('process-payment', {
         body: { 
@@ -156,16 +177,28 @@ const Preview = () => {
       });
 
       if (error) {
+        console.error("Payment function error:", error);
         throw new Error(error.message || 'Failed to process payment');
       }
 
+      if (!data || !data.url) {
+        console.error("Invalid response from payment function:", data);
+        throw new Error('Invalid response from payment service');
+      }
+
+      console.log("Payment session created, redirecting to:", data.url);
+      
       // Redirect to Stripe checkout page
       window.location.href = data.url;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error processing payment:", error);
+      
+      // Set specific payment error message
+      setPaymentError(error.message || "Failed to process payment. Please try again.");
+      
       toast({
         title: "Payment Error",
-        description: "Failed to process payment. Please try again.",
+        description: error.message || "Failed to process payment. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -307,6 +340,9 @@ const Preview = () => {
                       placeholder="your.email@example.com"
                       required
                     />
+                    {paymentError && (
+                      <p className="mt-2 text-sm text-red-600">{paymentError}</p>
+                    )}
                   </div>
                   
                   <Button 
