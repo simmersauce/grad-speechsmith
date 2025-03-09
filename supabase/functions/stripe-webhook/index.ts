@@ -37,57 +37,71 @@ serve(async (req) => {
       
       console.log("Processing completed checkout session:", session.id);
       
-      // Extract the form data from the session metadata
+      // Get the formDataId from the session metadata
+      const formDataId = session.metadata.formDataId;
+      
+      if (!formDataId) {
+        throw new Error("No formDataId found in session metadata");
+      }
+      
+      // Get the form data from our database
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('pending_form_data')
+        .select('*')
+        .eq('id', formDataId)
+        .single();
+        
+      if (pendingError) {
+        console.error("Error retrieving pending form data:", pendingError);
+        throw new Error("Failed to retrieve form data");
+      }
+      
+      const formData = pendingData.form_data;
+      const customerEmail = session.customer_email || pendingData.customer_email;
+      
+      console.log("Customer email:", customerEmail);
+      
+      // Save purchase information to database
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('speech_purchases')
+        .insert({
+          stripe_session_id: session.id,
+          payment_status: 'completed',
+          customer_email: customerEmail,
+          amount_paid: session.amount_total / 100, // Convert from cents
+          form_data: formData
+        })
+        .select();
+          
+      if (purchaseError) {
+        console.error("Error saving purchase:", purchaseError);
+        throw new Error("Failed to save purchase information");
+      }
+      
+      console.log("Purchase saved successfully:", purchaseData[0].id);
+      
+      // Generate the speeches using the generate-speeches endpoint
       try {
-        const formData = JSON.parse(session.metadata.formData);
-        const customerEmail = session.customer_email;
-        
-        console.log("Customer email:", customerEmail);
-        
-        // Save purchase information to database
-        const { data: purchaseData, error: purchaseError } = await supabase
-          .from('speech_purchases')
-          .insert({
-            stripe_session_id: session.id,
-            payment_status: 'completed',
-            customer_email: customerEmail,
-            amount_paid: session.amount_total / 100, // Convert from cents
-            form_data: formData
+        const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speeches`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({
+            formData,
+            purchaseId: purchaseData[0].id,
+            email: customerEmail
           })
-          .select();
-          
-        if (purchaseError) {
-          console.error("Error saving purchase:", purchaseError);
-          throw new Error("Failed to save purchase information");
-        }
+        });
         
-        console.log("Purchase saved successfully:", purchaseData[0].id);
-        
-        // Generate the speeches using the generate-speeches endpoint
-        try {
-          const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speeches`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${supabaseKey}`
-            },
-            body: JSON.stringify({
-              formData,
-              purchaseId: purchaseData[0].id,
-              email: customerEmail
-            })
-          });
-          
-          if (!generateResponse.ok) {
-            console.error("Failed to generate speeches:", await generateResponse.text());
-          } else {
-            console.log("Speeches generation triggered successfully");
-          }
-        } catch (generateError) {
-          console.error("Error triggering speech generation:", generateError);
+        if (!generateResponse.ok) {
+          console.error("Failed to generate speeches:", await generateResponse.text());
+        } else {
+          console.log("Speeches generation triggered successfully");
         }
-      } catch (error) {
-        console.error("Error processing checkout completion:", error);
+      } catch (generateError) {
+        console.error("Error triggering speech generation:", generateError);
       }
     }
 

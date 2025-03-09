@@ -1,10 +1,16 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   httpClient: Stripe.createFetchHttpClient(),
 });
+
+// Initialize Supabase client
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +26,23 @@ serve(async (req) => {
   try {
     const { formData, customerEmail } = await req.json();
 
-    // Create a payment session with Stripe
+    // Store the form data in Supabase first
+    const { data: storedData, error: storeError } = await supabase
+      .from('pending_form_data')
+      .insert({
+        form_data: formData,
+        customer_email: customerEmail
+      })
+      .select();
+
+    if (storeError) {
+      console.error("Error storing form data:", storeError);
+      throw new Error("Failed to store form data");
+    }
+
+    const formDataId = storedData[0].id;
+
+    // Create a payment session with Stripe, using only the formDataId in metadata
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -41,7 +63,7 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/preview`,
       customer_email: customerEmail,
       metadata: {
-        formData: JSON.stringify(formData)
+        formDataId: formDataId.toString() // Only store the ID as a reference
       }
     });
 
