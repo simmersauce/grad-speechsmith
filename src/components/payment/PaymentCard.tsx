@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -19,6 +19,41 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardP
   const { toast } = useToast();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+
+  // Handle redirect when URL is set
+  useEffect(() => {
+    if (redirectUrl) {
+      const redirectTimer = setTimeout(() => {
+        console.log("Redirecting to:", redirectUrl);
+        window.location.assign(redirectUrl);
+      }, 500);
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [redirectUrl]);
+
+  // Add timeout to reset loading state in case of stuck processing
+  useEffect(() => {
+    let timeoutId: number | null = null;
+    
+    if (isProcessingPayment) {
+      timeoutId = window.setTimeout(() => {
+        console.log("Payment processing timeout triggered");
+        setIsProcessingPayment(false);
+        setPaymentError("Payment process timed out. Please try again.");
+        toast({
+          title: "Processing Timeout",
+          description: "The payment process took too long. Please try again.",
+          variant: "destructive",
+        });
+      }, 20000); // 20 second timeout
+    }
+    
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [isProcessingPayment, toast]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,8 +69,9 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardP
   };
 
   const handlePurchase = async () => {
-    // Clear any previous payment errors
+    // Clear any previous payment errors and redirect URL
     setPaymentError("");
+    setRedirectUrl(null);
     
     if (!customerEmail) {
       toast({
@@ -90,8 +126,8 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardP
 
       console.log("Payment session created, redirecting to:", data.url);
       
-      // Directly redirect to Stripe checkout instead of using window.location.href
-      window.location.href = data.url;
+      // Set the redirect URL which will trigger the useEffect
+      setRedirectUrl(data.url);
       
     } catch (error: any) {
       console.error("Error processing payment:", error);
@@ -104,8 +140,15 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardP
         description: error.message || "Failed to process payment. Please try again.",
         variant: "destructive",
       });
+      
+      // Make sure to reset loading state on error
       setIsProcessingPayment(false);
     }
+  };
+
+  const handleRetry = () => {
+    setPaymentError("");
+    handlePurchase();
   };
 
   return (
@@ -147,9 +190,20 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData }: PaymentCardP
             className="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="your.email@example.com"
             required
+            disabled={isProcessingPayment}
           />
           {paymentError && (
-            <p className="mt-2 text-sm text-red-600">{paymentError}</p>
+            <div className="mt-2 text-sm text-red-600">
+              <p>{paymentError}</p>
+              <Button 
+                onClick={handleRetry} 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 text-xs"
+              >
+                Try Again
+              </Button>
+            </div>
           )}
         </div>
         
