@@ -9,6 +9,8 @@ import { TEST_MODE, dummyGeneratedSpeech } from "@/utils/testMode";
 import SpeechPreview from "@/components/speech/SpeechPreview";
 import PaymentCard from "@/components/payment/PaymentCard";
 import TestimonialSection from "@/components/testimonials/TestimonialSection";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 // Preview character limit constant
 const PREVIEW_CHAR_LIMIT = 400;
@@ -22,6 +24,7 @@ const Preview = () => {
   const [formData, setFormData] = useState(null);
   const [customerEmail, setCustomerEmail] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get formData from location state or sessionStorage
@@ -52,6 +55,7 @@ const Preview = () => {
     const generateSpeech = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         
         // If in test mode, use dummy speech after a slight delay to simulate API call
         if (TEST_MODE) {
@@ -68,12 +72,14 @@ const Preview = () => {
         });
 
         if (error) {
+          console.error("Edge function error:", error);
           throw new Error(error.message || 'Failed to generate speech');
         }
 
         setSpeech(responseData.speech);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error generating speech:", error);
+        setError(error.message || "An unknown error occurred");
         toast({
           title: "Error",
           description: "Failed to generate speech. Please try again.",
@@ -104,6 +110,16 @@ const Preview = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card className="p-4 sm:p-8 mb-6">
             <SpeechPreview 
               speech={speech} 

@@ -15,6 +15,7 @@ const EmailTestTool = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customerReference, setCustomerReference] = useState(`GSW-TEST-${Math.random().toString(36).substring(2, 10).toUpperCase()}`);
 
   // Create mock speech versions based on the dummy generated speech
   const createMockSpeechVersions = () => {
@@ -61,7 +62,6 @@ const EmailTestTool = () => {
       
       // Create mock data
       const mockPurchaseId = `test-${Date.now()}`;
-      const mockCustomerReference = `GSW-TEST-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
       const mockSpeechVersions = createMockSpeechVersions();
       
       toast({
@@ -76,7 +76,7 @@ const EmailTestTool = () => {
           formData: dummyFormData,
           speechVersions: mockSpeechVersions,
           purchaseId: mockPurchaseId,
-          customerReference: mockCustomerReference
+          customerReference: customerReference
         }
       });
 
@@ -89,7 +89,7 @@ const EmailTestTool = () => {
       
       toast({
         title: "Test Email Sent",
-        description: `Email with test speech drafts has been sent to ${email}. Reference number: ${mockCustomerReference}`,
+        description: `Email with test speech drafts has been sent to ${email}. Reference number: ${customerReference}`,
       });
     } catch (error: any) {
       console.error("Error sending test email:", error);
@@ -126,6 +126,18 @@ const EmailTestTool = () => {
           </AlertDescription>
         </Alert>
       )}
+      
+      <div className="mb-4">
+        <Label htmlFor="customer-reference" className="block text-sm font-medium mb-1">
+          Customer Reference
+        </Label>
+        <Input
+          id="customer-reference"
+          value={customerReference}
+          onChange={(e) => setCustomerReference(e.target.value)}
+          className="w-full font-mono"
+        />
+      </div>
       
       <div className="mb-4">
         <Label htmlFor="test-email" className="block text-sm font-medium mb-1">
