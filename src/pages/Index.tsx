@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +12,7 @@ import {
   Star 
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { FaqItem } from "@/components/FaqItem";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -154,6 +154,27 @@ const Index = () => {
           </div>
         </motion.div>
 
+        {/* FAQ Section */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="mt-28 max-w-4xl mx-auto"
+        >
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-xl text-gray-600">
+              Everything you need to know about our graduation speech service
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
+            {faqs.map((faq, index) => (
+              <FaqItem key={index} question={faq.question} answer={faq.answer} />
+            ))}
+          </div>
+        </motion.div>
+
         {/* Final CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -226,6 +247,45 @@ const testimonials = [
     quote: "My graduation speech needed to be memorable yet professional. ToastieAI delivered exactly what I needed, with just the right balance of humor and inspiration.",
     name: "Sarah Williams",
     role: "MBA Graduate"
+  }
+];
+
+const faqs = [
+  {
+    question: "What types of speeches can be created with our platform?",
+    answer: "Our flexible platform allows you to craft speeches for any graduation role, whether you're a valedictorian, class president, alumni, guest speaker, or even delivering a thank-you to teachers or mentors. Customize your tone—be it motivational, reflective, humorous, or heartfelt—to suit your audience and occasion."
+  },
+  {
+    question: "Why should I choose this service?",
+    answer: "Choose our service when you want to deliver an unforgettable graduation speech that inspires your audience. Whether you're nervous about public speaking, short on time, or struggling to turn your thoughts and experiences into words, we're here to help you craft a speech that leaves a lasting impression."
+  },
+  {
+    question: "How can I craft my speech using your platform?",
+    answer: "Simply select the type of speech you need and complete our tailored form. This step-by-step process gathers the essential details about your journey, memories, and achievements. We then refine and enhance your input, creating a personalized speech that captures your unique voice and story. Receive your ready-to-go speech in seconds—no writing skills required."
+  },
+  {
+    question: "How does your speech creation technology work?",
+    answer: "Powered by advanced AI, our system analyzes your writing style, tone, and the details you provide. It polishes your narrative, ensures clarity, and weaves your stories into a cohesive and impactful speech, designed to connect with and inspire your audience while preserving your original essence."
+  },
+  {
+    question: "How do I get my speech?",
+    answer: "Just complete the easy-to-use form with your stories and reflections, and we'll deliver three different drafts of your graduation speech within minutes—all for a simple, one-time purchase."
+  },
+  {
+    question: "What is the quality of the speeches?",
+    answer: "We deliver top-tier speeches comparable to those crafted by professional writers. Drawing from your unique anecdotes, our service produces a polished draft that may need minimal adjustments for personal preferences."
+  },
+  {
+    question: "How long are the speeches?",
+    answer: "Speeches are typically 500-700 words, which translates to about 3-5 minutes of speaking time, depending on your pace. The more details you provide, the more customized and potentially longer your speech will be. You can easily add or remove content to match your preferences."
+  },
+  {
+    question: "How long does it take to generate my speech?",
+    answer: "Once you complete the form, our system takes just 3-4 minutes to process your information and produce a thoughtfully crafted speech. It's the perfect tool for both careful planners and last-minute speechwriters."
+  },
+  {
+    question: "Is the speech created original?",
+    answer: "Absolutely. Every speech is 100% original, crafted specifically from the information you provide. We don't rely on templates, ensuring your speech is as unique and personal as your own story."
   }
 ];
 
