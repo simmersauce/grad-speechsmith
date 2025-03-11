@@ -54,11 +54,22 @@ const EmailTestTool = () => {
       });
       return;
     }
+    
+    // Validate customer reference format
+    if (!customerReference || customerReference.trim() === "") {
+      setCustomerReference(`GSW-TEST-${Math.random().toString(36).substring(2, 10).toUpperCase()}`);
+      toast({
+        title: "Reference Generated",
+        description: "A new customer reference has been generated.",
+      });
+      return;
+    }
 
     setIsLoading(true);
 
     try {
       console.log("Sending test email to:", email);
+      console.log("Using customer reference:", customerReference);
       
       // Create mock data
       const mockPurchaseId = `test-${Date.now()}`;

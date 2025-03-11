@@ -26,6 +26,12 @@ const PaymentSuccess = () => {
       const testReference = localStorage.getItem('test_customer_reference');
       if (testReference) {
         setCustomerReference(testReference);
+        console.log("Using test customer reference from localStorage:", testReference);
+      } else {
+        // Generate a fallback reference for test mode
+        const fallbackReference = `GSW-TEST-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        setCustomerReference(fallbackReference);
+        console.log("Generated fallback test reference:", fallbackReference);
       }
       
       // Simulate a loading state for a better user experience
@@ -35,7 +41,7 @@ const PaymentSuccess = () => {
         // Show a success toast
         toast({
           title: "Test Payment Successful!",
-          description: "This is a test. In a real scenario, speech drafts would be delivered to your email.",
+          description: "This is a test. Check your email for the speech drafts.",
         });
       }, 2000);
       
@@ -44,9 +50,14 @@ const PaymentSuccess = () => {
     
     // Normal functionality for real payments
     const fetchCustomerReference = async () => {
-      if (!sessionId) return;
+      if (!sessionId) {
+        console.warn("No session ID found in URL parameters");
+        return;
+      }
       
       try {
+        console.log("Fetching customer reference for session:", sessionId);
+        
         const { data, error } = await supabase
           .from('speech_purchases')
           .select('customer_reference')
@@ -55,13 +66,31 @@ const PaymentSuccess = () => {
         
         if (error) {
           console.error("Error fetching customer reference:", error);
-        } else if (data) {
+          // Generate a fallback reference when there's an error
+          const fallbackReference = `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+          setCustomerReference(fallbackReference);
+          console.log("Generated fallback reference after error:", fallbackReference);
+        } else if (data && data.customer_reference) {
+          console.log("Found customer reference:", data.customer_reference);
           setCustomerReference(data.customer_reference);
+        } else {
+          console.warn("No customer reference found for session:", sessionId);
+          // Generate a fallback reference when no data is found
+          const fallbackReference = `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+          setCustomerReference(fallbackReference);
+          console.log("Generated fallback reference (no data):", fallbackReference);
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
+        // Generate a fallback reference on exception
+        const fallbackReference = `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        setCustomerReference(fallbackReference);
+        console.log("Generated fallback reference after exception:", fallbackReference);
       }
     };
+    
+    // Fetch the customer reference
+    fetchCustomerReference();
     
     // Simulate a loading state for a better user experience
     const timer = setTimeout(() => {
@@ -73,8 +102,6 @@ const PaymentSuccess = () => {
         description: "Your speech drafts will be delivered to your email shortly.",
       });
     }, 2000);
-    
-    fetchCustomerReference();
     
     return () => clearTimeout(timer);
   }, [toast, sessionId, isTestMode]);
@@ -113,7 +140,7 @@ const PaymentSuccess = () => {
                 </h2>
                 <p className="text-lg text-gray-600 mb-6">
                   {isTestMode 
-                    ? "This is a test. In a real scenario, your speech drafts would be delivered to your email shortly."
+                    ? "This is a test. Check your email for the speech drafts."
                     : "Thank you for your purchase. Your speech drafts are being generated and will be delivered to your email shortly."}
                 </p>
                 
