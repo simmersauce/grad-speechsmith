@@ -93,7 +93,7 @@ serve(async (req) => {
     const speechListHTML = speechVersions.map((speech, index) => {
       return `
         <div style="margin-bottom: 20px; padding: 10px; border-left: 4px solid #0070f3;">
-          <h3 style="margin-top: 0;">Speech Version ${index + 1}: ${speech.tone || 'Standard'} Tone</h3>
+          <h3 style="margin-top: 0;">Speech Version ${index + 1}</h3>
           <p style="white-space: pre-wrap;">${speech.content.substring(0, 300)}...</p>
           <p><em>Full version available in the following emails</em></p>
         </div>
@@ -135,6 +135,7 @@ serve(async (req) => {
               <li><strong>Institution:</strong> ${formData?.institution || 'Your institution'}</li>
               <li><strong>Graduation:</strong> ${formData?.graduationClass || 'Your graduation'}</li>
               <li><strong>Role:</strong> ${formData?.role || 'Graduate'}</li>
+              <li><strong>Tone:</strong> ${formData?.tone || 'Standard'}</li>
             </ul>
             
             <p>Congratulations on your achievement! We wish you all the best for your graduation ceremony and future endeavors.</p>
@@ -153,7 +154,7 @@ serve(async (req) => {
       return {
         from: `Graduation Speech Writer <speeches@resend.dev>`,
         to: [email],
-        subject: `Graduation Speech Draft ${index + 1}: ${speech.tone || 'Standard'} Tone - Ref: ${customerReference}`,
+        subject: `Graduation Speech Draft ${index + 1} - Ref: ${customerReference}`,
         html: `
           <html>
             <head>
@@ -169,7 +170,7 @@ serve(async (req) => {
             <body>
               <div class="header">
                 <h1>Graduation Speech - Version ${index + 1}</h1>
-                <p>Tone: ${speech.tone || 'Standard'}</p>
+                <p>Tone: ${formData?.tone || 'Standard'}</p>
                 <p><strong>Reference: ${customerReference}</strong></p>
               </div>
               <div class="content">

@@ -24,31 +24,29 @@ serve(async (req) => {
     console.log("Generating speeches for purchase:", purchaseId);
     console.log("Using form data:", formData);
     
-    // Generate 3 different speeches with different tones
+    // Generate 3 different speeches with the same tone
     const speechVersions = [];
-    const tones = [
-      formData.tone, // Use the original tone
-      formData.tone === "formal" ? "inspirational" : "formal", // Alternative tone 1
-      formData.tone === "humorous" ? "heartfelt" : "humorous", // Alternative tone 2
-    ];
+    const tone = formData.tone; // Use the selected tone for all versions
 
     for (let i = 0; i < 3; i++) {
-      // Modify the prompt for each version to get different results
-      const customizedPrompt = `Generate a ${i === 0 ? "primary" : i === 1 ? "alternative" : "creative"} graduation speech for ${formData.name} 
+      // Modify the prompt for each version to get different results but maintain consistency
+      const customizedPrompt = `Generate a unique graduation speech for ${formData.name} 
         who is graduating from ${formData.institution} (${formData.graduationType}).
         Include their role: ${formData.role}, 
         personal background: ${formData.personalBackground || "not specified"}, 
-        tone: ${tones[i]}, 
+        tone: ${tone}, 
         themes: ${formData.themes || "not specified"}, 
         memories: ${formData.memories || "not specified"}, 
         goals and lessons: ${formData.goalsLessons || "not specified"}, 
         and acknowledgements: ${formData.acknowledgements || "not specified"}.
         Include this quote if provided: ${formData.quote || ""}.
         Also include these wishes: ${formData.wishes || "not specified"}.
-        For version ${i+1}, make it ${i === 0 ? "comprehensive and balanced" : i === 1 ? "concise and impactful" : "creative and memorable"}.
-        The speech should be motivational, personal, and around ${i === 0 ? "4-5" : i === 1 ? "3-4" : "4-5"} paragraphs long.`;
+        For version ${i+1}, create a unique iteration with different wording and structure, but maintain the SAME TONE and SAME LENGTH as the other versions.
+        Make sure this speech has a similar length to the other versions (about 4-5 paragraphs).
+        The speech should maintain a consistent ${tone} tone throughout and include all provided information.
+        This is iteration #${i+1} of 3 different versions, so make it unique while keeping the same overall structure and feel.`;
 
-      console.log(`Generating speech version ${i+1} with tone: ${tones[i]}`);
+      console.log(`Generating speech version ${i+1} with tone: ${tone}`);
 
       // Call OpenAI API
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -62,7 +60,7 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: "You are an expert speechwriter who creates inspiring graduation speeches.",
+              content: "You are an expert speechwriter who creates inspiring graduation speeches. When asked to create multiple versions of a speech, ensure they are unique iterations but maintain the same tone, style, and approximate length. Each version should reorganize and reword the content while covering the same key points."
             },
             { role: "user", content: customizedPrompt },
           ],
@@ -83,8 +81,8 @@ serve(async (req) => {
         purchase_id: purchaseId,
         content: generatedSpeech,
         version_number: i + 1,
-        tone: tones[i],
-        version_type: i === 0 ? "primary" : i === 1 ? "alternative" : "creative"
+        tone: tone,
+        version_type: `version_${i+1}`
       }).select();
       
       if (error) {
@@ -96,8 +94,8 @@ serve(async (req) => {
         id: data[0].id,
         content: generatedSpeech,
         versionNumber: i + 1,
-        tone: tones[i],
-        versionType: i === 0 ? "primary" : i === 1 ? "alternative" : "creative"
+        tone: tone,
+        versionType: `Version ${i+1}`
       });
       
       console.log(`Successfully generated and saved speech version ${i+1}`);
