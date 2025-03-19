@@ -12,7 +12,7 @@ export const generateSpeechWithOpenAI = async (prompt: string) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert speechwriter who creates inspiring graduation speeches. When asked to create multiple versions of a speech, ensure they are unique iterations but maintain the same tone, style, and approximate length. Each version should reorganize and reword the content while covering the same key points."
+          content: "You are an expert graduation speechwriter."
         },
         { role: "user", content: prompt },
       ],
