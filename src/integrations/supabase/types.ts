@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      click_events: {
+        Row: {
+          additional_data: Json | null
+          button_name: string
+          created_at: string
+          customer_email: string | null
+          id: string
+          session_id: string | null
+        }
+        Insert: {
+          additional_data?: Json | null
+          button_name: string
+          created_at?: string
+          customer_email?: string | null
+          id?: string
+          session_id?: string | null
+        }
+        Update: {
+          additional_data?: Json | null
+          button_name?: string
+          created_at?: string
+          customer_email?: string | null
+          id?: string
+          session_id?: string | null
+        }
+        Relationships: []
+      }
       graduation_speeches: {
         Row: {
           acknowledgements: string | null
