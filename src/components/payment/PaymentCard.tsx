@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { trackButtonClick } from "@/utils/clickTracking";
 
 interface PaymentCardProps {
   customerEmail: string;
@@ -74,6 +75,12 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData, onPaymentStart
   };
 
   const handlePurchase = async () => {
+    // Track the unlock speech button click
+    trackButtonClick('unlock_speech_button', { 
+      email_provided: !!customerEmail,
+      from: 'preview_page'
+    });
+    
     // Clear any previous payment errors and redirect URL
     setPaymentError("");
     setRedirectUrl(null);
@@ -152,6 +159,7 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData, onPaymentStart
   };
   
   const handleRetry = () => {
+    trackButtonClick('retry_payment_button');
     setPaymentError("");
     handlePurchase();
   };

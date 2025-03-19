@@ -8,6 +8,7 @@ import Preview from './pages/Preview';
 import PaymentSuccess from './pages/PaymentSuccess';
 import NotFound from './pages/NotFound';
 import EmailTestTool from "./components/payment/EmailTestTool";
+import { TEST_MODE } from './utils/testMode';
 
 const App = () => {
   return (
@@ -20,8 +21,8 @@ const App = () => {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {/* Add the email test tool at the bottom of the app */}
-      <EmailTestTool />
+      {/* Add the email test tool at the bottom of the app, but only in test mode */}
+      {TEST_MODE && <EmailTestTool />}
     </Router>
   );
 };

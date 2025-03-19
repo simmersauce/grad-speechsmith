@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -13,9 +14,15 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { FaqItem } from "@/components/FaqItem";
+import { trackButtonClick } from "@/utils/clickTracking";
 
 const Index = () => {
   const navigate = useNavigate();
+
+  const handleCreateSpeechClick = () => {
+    trackButtonClick('create_speech_button', { location: 'home_page' });
+    navigate("/create");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary/20">
@@ -37,7 +44,7 @@ const Index = () => {
             Let AI help you create a memorable and inspiring graduation speech in minutes
           </p>
           <Button
-            onClick={() => navigate("/create")}
+            onClick={handleCreateSpeechClick}
             className="group bg-primary hover:bg-primary/90 text-white px-8 py-6 rounded-full text-lg font-medium transition-all duration-200 transform hover:scale-105"
           >
             Get Started
@@ -187,7 +194,7 @@ const Index = () => {
             Join thousands of graduates who have delivered memorable speeches with our help
           </p>
           <Button
-            onClick={() => navigate("/create")}
+            onClick={handleCreateSpeechClick}
             className="group bg-primary hover:bg-primary/90 text-white px-8 py-6 rounded-full text-lg font-medium transition-all duration-200 transform hover:scale-105"
           >
             Create Your Speech
