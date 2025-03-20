@@ -19,7 +19,7 @@ export const createResponse = (data: any, status = 200) => {
 // Generate a speech prompt based on form data and version number
 export const generateSpeechPrompt = (formData: any, tone: string, versionNumber: number) => {
   return `Generate a ${tone} graduation speech for ${formData.name} a ${formData.role} at (${formData.graduationType})  
-    who is graduating from ${formData.institution}, Class of ${formData.graduationClass Use the following details to guide the speech: 
+    who is graduating from ${formData.institution}, Class of ${formData.graduationClass}. Use the following details to guide the speech: 
     personal background: ${formData.personalBackground || "not specified"}, 
     themes: ${formData.themes || "not specified"}, 
     memories: ${formData.memories || "not specified"}, 
