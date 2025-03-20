@@ -29,6 +29,68 @@ const generateCustomerReference = () => {
   return `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 };
 
+// Function to manually verify Stripe webhook signature
+async function verifyStripeSignature(payload: string, signature: string, secret: string): Promise<boolean> {
+  try {
+    // Get timestamp and signatures from the signature header
+    const signatureParts = signature.split(',');
+    if (signatureParts.length < 2) {
+      throw new Error("Invalid signature format");
+    }
+    
+    // Extract the timestamp
+    const timestampMatch = signatureParts[0].match(/^t=(\d+)$/);
+    if (!timestampMatch) {
+      throw new Error("Invalid timestamp in signature");
+    }
+    const timestamp = timestampMatch[1];
+    
+    // Extract the signature
+    const sigMatch = signatureParts[1].match(/^v1=([a-f0-9]+)$/);
+    if (!sigMatch) {
+      throw new Error("Invalid signature value");
+    }
+    const expectedSignature = sigMatch[1];
+    
+    // Create a string to sign
+    const signedPayload = `${timestamp}.${payload}`;
+    
+    // Decode the webhook secret to a Uint8Array
+    const key = new TextEncoder().encode(secret);
+    
+    // Encode the payload
+    const message = new TextEncoder().encode(signedPayload);
+    
+    // Create HMAC-SHA256
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      key,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    // Sign the payload
+    const signatureBuffer = await crypto.subtle.sign(
+      "HMAC",
+      cryptoKey,
+      message
+    );
+    
+    // Convert to hex string
+    const signatureBytes = new Uint8Array(signatureBuffer);
+    const computedSignature = Array.from(signatureBytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+      
+    // Compare signatures
+    return computedSignature === expectedSignature;
+  } catch (err) {
+    console.error("Error verifying signature:", err);
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -68,25 +130,24 @@ serve(async (req) => {
     const body = await req.text();
     console.log("Received webhook. Validating signature...");
     
-    // Validate the webhook signature
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        endpointSecret
-      );
-    } catch (err: any) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
+    // Manually verify the webhook signature
+    const isValid = await verifyStripeSignature(body, signature, endpointSecret);
+    
+    if (!isValid) {
+      console.error("Webhook signature verification failed");
       return new Response(
-        JSON.stringify({ error: `Webhook Error: ${err.message}` }),
+        JSON.stringify({ error: "Webhook Error: Signature verification failed" }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
-
+    
+    console.log("Signature verification succeeded");
+    
+    // Parse the event data
+    const event = JSON.parse(body);
     console.log(`Received Stripe event: ${event.type}`);
 
     // Handle the checkout.session.completed event

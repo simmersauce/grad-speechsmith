@@ -22,3 +22,22 @@ export const generateCustomerReference = (): string => {
   const randomPart = Math.random().toString(36).substring(2, 10).toUpperCase();
   return `${prefix}${randomPart}`;
 };
+
+// Helper to extract and validate the Stripe signature
+export const extractSignatureComponents = (signature: string): { timestamp: string, signatures: string[] } => {
+  const components: { timestamp: string, signatures: string[] } = {
+    timestamp: '',
+    signatures: []
+  };
+  
+  const parts = signature.split(',');
+  for (const part of parts) {
+    if (part.startsWith('t=')) {
+      components.timestamp = part.substring(2);
+    } else if (part.startsWith('v1=')) {
+      components.signatures.push(part.substring(3));
+    }
+  }
+  
+  return components;
+};
