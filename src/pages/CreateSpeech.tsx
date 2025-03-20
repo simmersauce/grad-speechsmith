@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -51,7 +50,6 @@ const CreateSpeech = () => {
   });
   
   useEffect(() => {
-    // If in test mode, pre-fill form with dummy data
     if (TEST_MODE) {
       Object.entries(dummyFormData).forEach(([key, value]) => {
         if (value) {
@@ -65,12 +63,10 @@ const CreateSpeech = () => {
       return;
     }
     
-    // Normal functionality for non-test mode
     let savedData;
     
     if (location.state?.formData) {
       savedData = location.state.formData;
-      // If we have an id from existing form data, set it
       if (location.state.formId) {
         setFormId(location.state.formId);
       }
@@ -80,7 +76,6 @@ const CreateSpeech = () => {
         try {
           const parsedData = JSON.parse(storedData);
           savedData = parsedData.formData;
-          // If we have a stored formId, set it
           if (parsedData.formId) {
             setFormId(parsedData.formId);
           }
@@ -108,14 +103,12 @@ const CreateSpeech = () => {
     try {
       setIsSubmitting(true);
       
-      // If in test mode, skip the database submission and proceed directly
       if (TEST_MODE) {
         toast({
           title: "Success",
           description: "Test mode: Your speech information has been saved!",
         });
         
-        // Store the form data in session storage
         sessionStorage.setItem('speechFormData', JSON.stringify({
           formData: values,
           formId: "test-id-123"
@@ -131,7 +124,6 @@ const CreateSpeech = () => {
         return;
       }
       
-      // Normal functionality for non-test mode
       const speechData = {
         name: values.name,
         email: values.email,
@@ -154,14 +146,12 @@ const CreateSpeech = () => {
       let result;
       
       if (formId) {
-        // Update existing record
         result = await supabase
           .from('graduation_speeches')
           .update(speechData)
           .eq('id', formId)
           .select();
       } else {
-        // Insert new record
         result = await supabase
           .from('graduation_speeches')
           .insert(speechData)
@@ -188,7 +178,6 @@ const CreateSpeech = () => {
         description: "Your speech information has been saved!",
       });
       
-      // Store the form data and ID in session storage
       sessionStorage.setItem('speechFormData', JSON.stringify({
         formData: values,
         formId: formId || newFormId
@@ -255,10 +244,17 @@ const CreateSpeech = () => {
     }
   };
 
+  const handleGoHome = () => {
+    navigate("/");
+  };
+
   return (
     <div className="container mx-auto py-16 px-4 max-w-4xl">
       <div className="text-center mb-12">
-        <GraduationCap className="w-16 h-16 mx-auto text-primary mb-4" />
+        <GraduationCap 
+          className="w-16 h-16 mx-auto text-primary mb-4 cursor-pointer hover:text-primary/80 transition-colors" 
+          onClick={handleGoHome}
+        />
         <h1 className="text-3xl md:text-4xl font-bold mb-4">Create Your Graduation Speech</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
           Fill out the form below with details about yourself and your graduation.
