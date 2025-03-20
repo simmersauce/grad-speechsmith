@@ -1,8 +1,13 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, createResponse } from "../send-emails/utils.ts";
+import { verifyStripeSignature } from "./signatureVerification.ts";
+import { 
+  initializeSupabase, 
+  processCompletedCheckout, 
+  triggerSpeechGeneration 
+} from "./paymentProcessor.ts";
 
 // Get environment variables
 const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -15,76 +20,6 @@ const stripe = new Stripe(stripeSecretKey || "", {
   httpClient: Stripe.createFetchHttpClient(),
   apiVersion: '2023-10-16', // Specify the Stripe API version
 });
-
-// Initialize Supabase client
-const supabase = createClient(supabaseUrl || "", supabaseKey || "");
-
-// Function to generate a customer reference
-const generateCustomerReference = () => {
-  return `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-};
-
-// Function to manually verify Stripe webhook signature
-async function verifyStripeSignature(payload: string, signature: string, secret: string): Promise<boolean> {
-  try {
-    // Get timestamp and signatures from the signature header
-    const signatureParts = signature.split(',');
-    if (signatureParts.length < 2) {
-      throw new Error("Invalid signature format");
-    }
-    
-    // Extract the timestamp
-    const timestampMatch = signatureParts[0].match(/^t=(\d+)$/);
-    if (!timestampMatch) {
-      throw new Error("Invalid timestamp in signature");
-    }
-    const timestamp = timestampMatch[1];
-    
-    // Extract the signature
-    const sigMatch = signatureParts[1].match(/^v1=([a-f0-9]+)$/);
-    if (!sigMatch) {
-      throw new Error("Invalid signature value");
-    }
-    const expectedSignature = sigMatch[1];
-    
-    // Create a string to sign
-    const signedPayload = `${timestamp}.${payload}`;
-    
-    // Decode the webhook secret to a Uint8Array
-    const key = new TextEncoder().encode(secret);
-    
-    // Encode the payload
-    const message = new TextEncoder().encode(signedPayload);
-    
-    // Create HMAC-SHA256
-    const cryptoKey = await crypto.subtle.importKey(
-      "raw",
-      key,
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"]
-    );
-    
-    // Sign the payload
-    const signatureBuffer = await crypto.subtle.sign(
-      "HMAC",
-      cryptoKey,
-      message
-    );
-    
-    // Convert to hex string
-    const signatureBytes = new Uint8Array(signatureBuffer);
-    const computedSignature = Array.from(signatureBytes)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-      
-    // Compare signatures
-    return computedSignature === expectedSignature;
-  } catch (err) {
-    console.error("Error verifying signature:", err);
-    return false;
-  }
-}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -139,108 +74,28 @@ serve(async (req) => {
     const event = JSON.parse(body);
     console.log(`Received Stripe event: ${event.type}`);
 
+    // Initialize Supabase client
+    initializeSupabase(supabaseUrl, supabaseKey);
+
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       
-      console.log("Processing completed checkout session:", session.id);
-      
-      // Get the formDataId from the session metadata
-      const formDataId = session.metadata?.formDataId;
-      
-      if (!formDataId) {
-        console.error("No formDataId found in session metadata");
-        return createResponse({ error: "No formDataId found in session metadata" }, 400);
-      }
-      
-      console.log("Looking up form data with ID:", formDataId);
-      
-      // Get the form data from our database
-      const { data: pendingData, error: pendingError } = await supabase
-        .from('pending_form_data')
-        .select('*')
-        .eq('id', formDataId)
-        .single();
-        
-      if (pendingError) {
-        console.error("Error retrieving pending form data:", pendingError);
-        return createResponse({ error: `Failed to retrieve form data: ${pendingError.message}` }, 500);
-      }
-      
-      if (!pendingData) {
-        console.error(`No pending form data found with ID: ${formDataId}`);
-        return createResponse({ error: `No pending form data found with ID: ${formDataId}` }, 404);
-      }
-      
-      const formData = pendingData.form_data;
-      const customerEmail = session.customer_email || pendingData.customer_email;
-      
-      console.log("Customer email:", customerEmail);
-      
-      // Generate a unique customer reference
-      const customerReference = generateCustomerReference();
-      console.log("Generated customer reference:", customerReference);
-      
-      // Save purchase information to database
-      const { data: purchaseData, error: purchaseError } = await supabase
-        .from('speech_purchases')
-        .insert({
-          stripe_session_id: session.id,
-          payment_status: 'completed',
-          customer_email: customerEmail,
-          amount_paid: session.amount_total / 100, // Convert from cents
-          form_data: formData,
-          customer_reference: customerReference,
-          speeches_generated: false,
-          emails_sent: false
-        })
-        .select();
-          
-      if (purchaseError) {
-        console.error("Error saving purchase:", purchaseError);
-        return createResponse({ error: `Failed to save purchase information: ${purchaseError.message}` }, 500);
-      }
-      
-      console.log("Purchase saved successfully:", purchaseData[0].id);
-      
-      // Update the pending_form_data record to mark it as processed
-      const { error: updateError } = await supabase
-        .from('pending_form_data')
-        .update({ processed: true })
-        .eq('id', formDataId);
-        
-      if (updateError) {
-        console.error("Error updating pending form data:", updateError);
-        // We'll continue even if this fails as it's not critical
-      }
-      
-      // Generate the speeches using the generate-speeches endpoint
       try {
-        console.log("Triggering speech generation for purchase:", purchaseData[0].id);
+        // Process the checkout session
+        const { purchaseId, customerEmail, formData } = await processCompletedCheckout(session);
         
-        const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speeches`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseKey}`
-          },
-          body: JSON.stringify({
-            formData,
-            purchaseId: purchaseData[0].id,
-            email: customerEmail
-          })
-        });
-        
-        if (!generateResponse.ok) {
-          const errorText = await generateResponse.text();
-          console.error("Failed to generate speeches:", errorText);
-          // We'll continue even if speech generation fails, as we can try again later
-        } else {
-          console.log("Speeches generation triggered successfully");
-        }
-      } catch (generateError: any) {
-        console.error("Error triggering speech generation:", generateError);
-        // We'll continue even if speech generation fails, as we can try again later
+        // Generate the speeches
+        await triggerSpeechGeneration(
+          purchaseId, 
+          formData, 
+          customerEmail, 
+          supabaseUrl, 
+          supabaseKey
+        );
+      } catch (error: any) {
+        console.error("Error processing checkout:", error);
+        // We'll still return a 200 to Stripe, but log the error for our debugging
       }
     }
 
