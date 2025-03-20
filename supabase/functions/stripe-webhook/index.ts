@@ -38,20 +38,9 @@ serve(async (req) => {
     });
   }
 
-  const signature = req.headers.get("stripe-signature");
-  
-  if (!signature) {
-    console.error("Missing stripe-signature header");
-    return new Response(
-      JSON.stringify({ error: "Missing stripe-signature header" }),
-      { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-
   try {
+    console.log("Webhook endpoint called");
+    
     // Check that required environment variables are set
     if (!stripeSecretKey) {
       console.error("Missing STRIPE_SECRET_KEY");
@@ -63,14 +52,23 @@ serve(async (req) => {
       throw new Error("Server configuration error: Missing database credentials");
     }
 
+    // For webhook processing, a signature is required
+    const signature = req.headers.get("stripe-signature");
+    
+    if (!signature) {
+      console.error("Missing stripe-signature header");
+      throw new Error("Missing Stripe signature");
+    }
+    
     if (!endpointSecret) {
       console.error("Missing STRIPE_WEBHOOK_SECRET");
       throw new Error("Server configuration error: Missing webhook secret");
     }
-
+    
     const body = await req.text();
     console.log("Received webhook. Validating signature...");
     
+    // Validate the webhook signature
     let event;
     try {
       event = stripe.webhooks.constructEvent(
@@ -81,7 +79,7 @@ serve(async (req) => {
     } catch (err: any) {
       console.error(`Webhook signature verification failed: ${err.message}`);
       return new Response(
-        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
+        JSON.stringify({ error: `Webhook Error: ${err.message}` }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -91,6 +89,7 @@ serve(async (req) => {
 
     console.log(`Received Stripe event: ${event.type}`);
 
+    // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       
@@ -141,7 +140,9 @@ serve(async (req) => {
           customer_email: customerEmail,
           amount_paid: session.amount_total / 100, // Convert from cents
           form_data: formData,
-          customer_reference: customerReference
+          customer_reference: customerReference,
+          speeches_generated: false,
+          emails_sent: false
         })
         .select();
           
@@ -193,6 +194,7 @@ serve(async (req) => {
       }
     }
 
+    // Return a 200 response to acknowledge receipt of the event
     return new Response(
       JSON.stringify({ received: true }),
       {
