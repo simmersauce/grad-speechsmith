@@ -2,12 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, createResponse } from "../send-emails/utils.ts";
 
 // Get environment variables
 const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -106,12 +101,12 @@ serve(async (req) => {
     // Check that required environment variables are set
     if (!stripeSecretKey) {
       console.error("Missing STRIPE_SECRET_KEY");
-      throw new Error("Server configuration error: Missing Stripe key");
+      return createResponse({ error: "Server configuration error: Missing Stripe key" }, 500);
     }
     
     if (!supabaseUrl || !supabaseKey) {
       console.error("Missing Supabase credentials");
-      throw new Error("Server configuration error: Missing database credentials");
+      return createResponse({ error: "Server configuration error: Missing database credentials" }, 500);
     }
 
     // For webhook processing, a signature is required
@@ -119,12 +114,12 @@ serve(async (req) => {
     
     if (!signature) {
       console.error("Missing stripe-signature header");
-      throw new Error("Missing Stripe signature");
+      return createResponse({ error: "Missing Stripe signature" }, 400);
     }
     
     if (!endpointSecret) {
       console.error("Missing STRIPE_WEBHOOK_SECRET");
-      throw new Error("Server configuration error: Missing webhook secret");
+      return createResponse({ error: "Server configuration error: Missing webhook secret" }, 500);
     }
     
     const body = await req.text();
@@ -135,13 +130,7 @@ serve(async (req) => {
     
     if (!isValid) {
       console.error("Webhook signature verification failed");
-      return new Response(
-        JSON.stringify({ error: "Webhook Error: Signature verification failed" }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return createResponse({ error: "Webhook Error: Signature verification failed" }, 400);
     }
     
     console.log("Signature verification succeeded");
@@ -161,7 +150,7 @@ serve(async (req) => {
       
       if (!formDataId) {
         console.error("No formDataId found in session metadata");
-        throw new Error("No formDataId found in session metadata");
+        return createResponse({ error: "No formDataId found in session metadata" }, 400);
       }
       
       console.log("Looking up form data with ID:", formDataId);
@@ -175,12 +164,12 @@ serve(async (req) => {
         
       if (pendingError) {
         console.error("Error retrieving pending form data:", pendingError);
-        throw new Error(`Failed to retrieve form data: ${pendingError.message}`);
+        return createResponse({ error: `Failed to retrieve form data: ${pendingError.message}` }, 500);
       }
       
       if (!pendingData) {
         console.error(`No pending form data found with ID: ${formDataId}`);
-        throw new Error(`No pending form data found with ID: ${formDataId}`);
+        return createResponse({ error: `No pending form data found with ID: ${formDataId}` }, 404);
       }
       
       const formData = pendingData.form_data;
@@ -209,7 +198,7 @@ serve(async (req) => {
           
       if (purchaseError) {
         console.error("Error saving purchase:", purchaseError);
-        throw new Error(`Failed to save purchase information: ${purchaseError.message}`);
+        return createResponse({ error: `Failed to save purchase information: ${purchaseError.message}` }, 500);
       }
       
       console.log("Purchase saved successfully:", purchaseData[0].id);
@@ -245,7 +234,7 @@ serve(async (req) => {
         if (!generateResponse.ok) {
           const errorText = await generateResponse.text();
           console.error("Failed to generate speeches:", errorText);
-          throw new Error(`Failed to generate speeches: ${errorText}`);
+          // We'll continue even if speech generation fails, as we can try again later
         } else {
           console.log("Speeches generation triggered successfully");
         }
@@ -256,21 +245,9 @@ serve(async (req) => {
     }
 
     // Return a 200 response to acknowledge receipt of the event
-    return new Response(
-      JSON.stringify({ received: true }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return createResponse({ received: true });
   } catch (error: any) {
     console.error("Error in stripe-webhook function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Webhook Error" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return createResponse({ error: error.message || "Webhook Error" }, 400);
   }
 });
