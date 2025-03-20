@@ -14,6 +14,25 @@ export const sendEmailNotification = async (
     console.log(`Sending email notification for purchase ${purchaseId} to ${email}`);
     console.log(`Found ${speechVersions.length} speech versions to send`);
     
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      console.error("Invalid email address:", email);
+      throw new Error("Invalid email address provided");
+    }
+    
+    if (!speechVersions || speechVersions.length === 0) {
+      console.error("No speech versions to send");
+      throw new Error("No speech versions generated");
+    }
+    
+    // Prepare speech versions to make sure they have all required fields
+    const preparedSpeechVersions = speechVersions.map((speech, index) => ({
+      id: speech.id || `speech-${index}`,
+      content: speech.content || "",
+      versionNumber: speech.versionNumber || index + 1,
+      tone: speech.tone || "standard",
+      versionType: speech.versionType || `Version ${index + 1}`
+    }));
+    
     console.log(`Calling send-emails function at ${supabaseUrl}/functions/v1/send-emails`);
     const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-emails`, {
       method: "POST",
@@ -25,7 +44,7 @@ export const sendEmailNotification = async (
         purchaseId,
         email,
         formData,
-        speechVersions
+        speechVersions: preparedSpeechVersions
       })
     });
 
@@ -35,7 +54,7 @@ export const sendEmailNotification = async (
 
     if (!emailResponse.ok) {
       console.error("Failed to trigger email sending:", responseText);
-      return false;
+      throw new Error(`Email sending failed with status ${emailResponse.status}: ${responseText}`);
     } 
     
     console.log("Email sending triggered successfully");
@@ -49,7 +68,7 @@ export const sendEmailNotification = async (
       
     if (error) {
       console.error("Error updating emails_sent status:", error);
-      return false;
+      throw new Error(`Failed to update purchase record: ${error.message}`);
     }
       
     console.log("Purchase record updated successfully - emails marked as sent");

@@ -44,7 +44,7 @@ serve(async (req) => {
     // Send all emails (summary and individual speeches)
     console.log("Calling sendAllEmails function...");
     const emailResults = await sendAllEmails(email, formData, speechVersions, customerReference);
-    console.log("Email sending completed successfully");
+    console.log("Email sending completed with results:", JSON.stringify(emailResults));
     
     return createResponse({ 
       success: true,

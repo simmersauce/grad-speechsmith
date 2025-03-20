@@ -16,6 +16,8 @@ const EmailTestTool = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerReference, setCustomerReference] = useState(`GSW-TEST-${Math.random().toString(36).substring(2, 10).toUpperCase()}`);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   // Create mock speech versions based on the dummy generated speech
   const createMockSpeechVersions = () => {
@@ -34,6 +36,7 @@ const EmailTestTool = () => {
   const handleSendTestEmail = async () => {
     // Reset error state
     setError(null);
+    setDebugInfo(null);
     
     if (!email) {
       toast({
@@ -100,6 +103,7 @@ const EmailTestTool = () => {
       }
 
       console.log("Send emails response:", data);
+      setDebugInfo(data);
       
       toast({
         title: "Test Email Sent",
@@ -167,6 +171,21 @@ const EmailTestTool = () => {
         />
       </div>
       
+      <div className="mb-4">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="debug-mode"
+            checked={debugMode}
+            onChange={(e) => setDebugMode(e.target.checked)}
+            className="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary"
+          />
+          <label htmlFor="debug-mode" className="ml-2 block text-sm text-gray-700">
+            Show Debug Information
+          </label>
+        </div>
+      </div>
+      
       <Button 
         onClick={handleSendTestEmail}
         disabled={isLoading}
@@ -174,6 +193,15 @@ const EmailTestTool = () => {
       >
         {isLoading ? "Sending..." : "Send Test Email with Speeches"}
       </Button>
+      
+      {debugMode && debugInfo && (
+        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+          <h4 className="text-sm font-medium mb-2">Debug Information:</h4>
+          <pre className="text-xs overflow-auto max-h-40">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+        </div>
+      )}
     </Card>
   );
 };
