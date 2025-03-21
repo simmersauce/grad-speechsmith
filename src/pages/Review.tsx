@@ -1,3 +1,4 @@
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { useEffect, useState } from "react";
 import { TEST_MODE, dummyFormData } from "@/utils/testMode";
 import EmailTestTool from "@/components/payment/EmailTestTool";
 import PaymentSuccessSimulator from "@/components/payment/PaymentSuccessSimulator";
+import TestingDashboard from "@/components/testing/TestingDashboard";
 import { trackButtonClick } from "@/utils/clickTracking";
 
 const Review = () => {
@@ -118,6 +120,7 @@ const Review = () => {
               <h2 className="text-xl font-bold text-center mb-6 bg-amber-100 py-2 rounded">Test Mode Tools</h2>
               <EmailTestTool />
               <PaymentSuccessSimulator />
+              <TestingDashboard />
             </div>
           )}
         </motion.div>
