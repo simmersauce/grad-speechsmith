@@ -1,9 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Database, Function as FunctionIcon, RefreshCw } from "lucide-react";
+import { AlertCircle, Database, Code, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TEST_MODE } from "@/utils/testMode";
@@ -114,7 +113,7 @@ const TestingDashboard = () => {
             Purchases
           </TabsTrigger>
           <TabsTrigger value="speeches" className="flex-1">
-            <FunctionIcon className="w-4 h-4 mr-2" />
+            <Code className="w-4 h-4 mr-2" />
             Speech Versions
           </TabsTrigger>
         </TabsList>
