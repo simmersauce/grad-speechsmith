@@ -1,5 +1,6 @@
-// Test mode flag - set to true to enable test mode
-export const TEST_MODE = true;
+
+// Test mode flag - set to false to disable test mode
+export const TEST_MODE = false;
 
 // Dummy form data for testing
 export const dummyFormData = {
@@ -45,3 +46,4 @@ Class of 2024, this is not the end of our story; it's merely the end of this cha
 Congratulations to each and every one of you. It has been an honor to walk this path alongside you, and I cannot wait to see the remarkable things we will accomplish.
 
 Thank you.`;
+
