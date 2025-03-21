@@ -51,7 +51,7 @@ const EdgeFunctionTester = () => {
             graduationClass: "Class of 2024",
             tone: "inspirational"
           },
-          email: "test@example.com"
+          customerEmail: "test@example.com" // Using customerEmail for clarity
         };
         break;
       case "generate-speeches":
@@ -62,7 +62,14 @@ const EdgeFunctionTester = () => {
             role: "valedictorian",
             institution: "Test University",
             graduationClass: "Class of 2024",
-            tone: "inspirational"
+            tone: "inspirational",
+            // Add some optional fields to make the speech more interesting
+            personalBackground: "Worked hard throughout school while also participating in debate club",
+            themes: "Perseverance, Growth, Future opportunities",
+            memories: "Late night study sessions, winning the debate championship",
+            goalsLessons: "Learning to balance academics and personal growth",
+            acknowledgements: "Family, friends, and supportive faculty",
+            graduationType: "College graduation"
           },
           purchaseId: "test-purchase-id",
           email: "test@example.com",
@@ -78,8 +85,8 @@ const EdgeFunctionTester = () => {
             role: "valedictorian"
           },
           speechVersions: [
-            { title: "Test Speech 1", content: "This is test speech content 1" },
-            { title: "Test Speech 2", content: "This is test speech content 2" }
+            { id: "test-speech-1", content: "This is test speech content 1", versionNumber: 1, tone: "inspirational", versionType: "Version 1" },
+            { id: "test-speech-2", content: "This is test speech content 2", versionNumber: 2, tone: "inspirational", versionType: "Version 2" }
           ],
           customerReference: "GSW-TEST123"
         };
