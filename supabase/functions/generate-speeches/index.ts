@@ -16,10 +16,38 @@ serve(async (req) => {
   }
 
   try {
-    const { formData, purchaseId, email } = await req.json();
+    console.log("Generate-speeches function called");
+    console.log("Request headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+    
+    // Validate authentication
+    const authHeader = req.headers.get("Authorization");
+    const apiKey = req.headers.get("apikey");
+    
+    if (!authHeader && !apiKey) {
+      console.error("Missing authentication headers");
+      return createResponse({ error: "Missing authorization header" }, 401);
+    }
+    
+    // Check OpenAI API key is available
+    const openAiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openAiKey) {
+      console.error("Missing OPENAI_API_KEY");
+      return createResponse({ error: "Server configuration error: Missing OpenAI API key" }, 500);
+    }
+
+    let reqData;
+    try {
+      reqData = await req.json();
+    } catch (parseError) {
+      console.error("Failed to parse request JSON:", parseError);
+      return createResponse({ error: "Invalid JSON in request body" }, 400);
+    }
+    
+    const { formData, purchaseId, email, customerReference } = reqData;
     
     console.log("Generating speeches for purchase:", purchaseId);
-    console.log("Using form data:", formData);
+    console.log("Using customer reference:", customerReference);
+    console.log("Using form data:", JSON.stringify(formData, null, 2));
     
     // Generate 3 different speeches with the same tone
     const speechVersions = [];
@@ -29,24 +57,33 @@ serve(async (req) => {
       const versionNumber = i + 1;
       console.log(`Generating speech version ${versionNumber} with tone: ${tone}`);
       
-      // Generate the prompt for this version
-      const customizedPrompt = generateSpeechPrompt(formData, tone, versionNumber);
+      try {
+        // Generate the prompt for this version
+        const customizedPrompt = generateSpeechPrompt(formData, tone, versionNumber);
 
-      // Call OpenAI API to generate the speech
-      const generatedSpeech = await generateSpeechWithOpenAI(customizedPrompt);
-      
-      // Save the speech version to the database
-      const savedSpeech = await saveSpeechVersion(purchaseId, generatedSpeech, versionNumber, tone);
-      
-      speechVersions.push({
-        id: savedSpeech.id,
-        content: generatedSpeech,
-        versionNumber: versionNumber,
-        tone: tone,
-        versionType: `Version ${versionNumber}`
-      });
-      
-      console.log(`Successfully generated and saved speech version ${versionNumber}`);
+        // Call OpenAI API to generate the speech
+        const generatedSpeech = await generateSpeechWithOpenAI(customizedPrompt);
+        
+        // Save the speech version to the database
+        const savedSpeech = await saveSpeechVersion(purchaseId, generatedSpeech, versionNumber, tone);
+        
+        speechVersions.push({
+          id: savedSpeech.id,
+          content: generatedSpeech,
+          versionNumber: versionNumber,
+          tone: tone,
+          versionType: `Version ${versionNumber}`
+        });
+        
+        console.log(`Successfully generated and saved speech version ${versionNumber}`);
+      } catch (versionError) {
+        console.error(`Error generating speech version ${versionNumber}:`, versionError);
+        // Continue with other versions
+      }
+    }
+    
+    if (speechVersions.length === 0) {
+      throw new Error("Failed to generate any speech versions");
     }
 
     // Update purchase record to mark speeches as generated

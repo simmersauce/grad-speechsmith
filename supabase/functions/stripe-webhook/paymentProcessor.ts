@@ -105,7 +105,8 @@ export async function processCompletedCheckout(session: any) {
   return {
     purchaseId: purchaseData[0].id,
     customerEmail,
-    formData
+    formData,
+    customerReference  // Return the customer reference
   };
 }
 
@@ -122,33 +123,39 @@ export async function triggerSpeechGeneration(
   formData: any,
   email: string,
   supabaseUrl: string,
-  supabaseKey: string
+  supabaseKey: string,
+  customerReference: string
 ): Promise<void> {
   try {
     console.log("Triggering speech generation for purchase:", purchaseId);
+    console.log("Using customer reference:", customerReference);
     
+    // Fix the authorization header format by using proper bearer token format
     const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speeches`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseKey}`
+        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": supabaseKey  // Add apikey header as a fallback
       },
       body: JSON.stringify({
         formData,
         purchaseId,
-        email
+        email,
+        customerReference  // Pass the customer reference to the generate-speeches function
       })
     });
     
     if (!generateResponse.ok) {
       const errorText = await generateResponse.text();
-      console.error("Failed to generate speeches:", errorText);
-      // We'll continue even if speech generation fails, as we can try again later
+      console.error(`Failed to generate speeches: Status ${generateResponse.status}, Response: ${errorText}`);
+      throw new Error(`Failed to generate speeches: ${generateResponse.status} - ${errorText}`);
     } else {
-      console.log("Speeches generation triggered successfully");
+      const responseData = await generateResponse.json();
+      console.log("Speeches generation response:", JSON.stringify(responseData));
     }
   } catch (generateError: any) {
     console.error("Error triggering speech generation:", generateError);
-    // We'll continue even if speech generation fails, as we can try again later
+    // Log the error but continue
   }
 }

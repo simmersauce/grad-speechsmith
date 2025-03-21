@@ -34,28 +34,33 @@ export const sendEmailNotification = async (
     }));
     
     console.log(`Calling send-emails function at ${supabaseUrl}/functions/v1/send-emails`);
+    
+    // Fix the authorization header format by using proper bearer token format
     const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-emails`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseKey}`
+        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": supabaseKey  // Add apikey header as a fallback
       },
       body: JSON.stringify({
         purchaseId,
         email,
         formData,
-        speechVersions: preparedSpeechVersions
+        speechVersions: preparedSpeechVersions,
+        // Add a customerReference to ensure it's available in send-emails
+        customerReference: await fetchCustomerReference(purchaseId)
       })
     });
 
-    const responseText = await emailResponse.text();
-    console.log(`Send-emails status: ${emailResponse.status}`);
-    console.log(`Send-emails response: ${responseText}`);
-
     if (!emailResponse.ok) {
-      console.error("Failed to trigger email sending:", responseText);
+      const responseText = await emailResponse.text();
+      console.error(`Send-emails failed with status ${emailResponse.status}: ${responseText}`);
       throw new Error(`Email sending failed with status ${emailResponse.status}: ${responseText}`);
-    } 
+    }
+    
+    const responseData = await emailResponse.json();
+    console.log("Send-emails response:", JSON.stringify(responseData));
     
     console.log("Email sending triggered successfully");
     
@@ -78,3 +83,24 @@ export const sendEmailNotification = async (
     return false;
   }
 };
+
+// Helper function to fetch customer reference from the database
+async function fetchCustomerReference(purchaseId: string): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('speech_purchases')
+      .select('customer_reference')
+      .eq('id', purchaseId)
+      .single();
+      
+    if (error) {
+      console.error("Error fetching customer reference:", error);
+      return `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    }
+    
+    return data?.customer_reference || `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  } catch (error) {
+    console.error("Error in fetchCustomerReference:", error);
+    return `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  }
+}

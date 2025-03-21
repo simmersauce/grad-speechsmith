@@ -32,6 +32,8 @@ serve(async (req) => {
 
   try {
     console.log("Webhook endpoint called");
+    console.log("HTTP Method:", req.method);
+    console.log("Headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     
     // Check that required environment variables are set
     if (!stripeSecretKey) {
@@ -58,13 +60,15 @@ serve(async (req) => {
     }
     
     const body = await req.text();
-    console.log("Received webhook. Validating signature...");
+    console.log("Received webhook payload. Validating signature...");
     
     // Manually verify the webhook signature
     const isValid = await verifyStripeSignature(body, signature, endpointSecret);
     
     if (!isValid) {
       console.error("Webhook signature verification failed");
+      console.error("Signature:", signature);
+      console.error("Secret ends with:", endpointSecret.slice(-4));
       return createResponse({ error: "Webhook Error: Signature verification failed" }, 400);
     }
     
@@ -83,7 +87,8 @@ serve(async (req) => {
       
       try {
         // Process the checkout session
-        const { purchaseId, customerEmail, formData } = await processCompletedCheckout(session);
+        const { purchaseId, customerEmail, formData, customerReference } = await processCompletedCheckout(session);
+        console.log("Checkout processed successfully. Purchase ID:", purchaseId);
         
         // Generate the speeches
         await triggerSpeechGeneration(
@@ -91,11 +96,12 @@ serve(async (req) => {
           formData, 
           customerEmail, 
           supabaseUrl, 
-          supabaseKey
+          supabaseKey,
+          customerReference
         );
       } catch (error: any) {
         console.error("Error processing checkout:", error);
-        // We'll still return a 200 to Stripe, but log the error for our debugging
+        // We'll still return a 200 to Stripe to acknowledge receipt, but log the error
       }
     }
 

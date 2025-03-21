@@ -12,13 +12,38 @@ serve(async (req) => {
 
   try {
     console.log("Send-emails function called");
+    console.log("Request headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     
-    const { purchaseId, email, formData, speechVersions, customerReference: providedReference } = await req.json();
+    // Validate authentication
+    const authHeader = req.headers.get("Authorization");
+    const apiKey = req.headers.get("apikey");
+    
+    if (!authHeader && !apiKey) {
+      console.error("Missing authentication headers");
+      return createResponse({ error: "Missing authorization header" }, 401);
+    }
+    
+    let reqData;
+    try {
+      reqData = await req.json();
+    } catch (parseError) {
+      console.error("Failed to parse request JSON:", parseError);
+      return createResponse({ error: "Invalid JSON in request body" }, 400);
+    }
+    
+    const { purchaseId, email, formData, speechVersions, customerReference: providedReference } = reqData;
     
     console.log("Received email request for:", email);
     console.log("Purchase ID:", purchaseId);
     console.log("Provided customer reference:", providedReference);
     console.log("Speech versions count:", speechVersions?.length || 0);
+    console.log("Request data:", JSON.stringify({
+      email,
+      purchaseId,
+      customerReference: providedReference,
+      speechVersionsCount: speechVersions?.length || 0,
+      formDataExists: !!formData
+    }));
     
     // Check if Resend API key is set
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
