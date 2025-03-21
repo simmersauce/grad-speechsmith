@@ -1,18 +1,17 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, PlayCircle } from "lucide-react";
+import { AlertCircle, PlayCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // A hidden utility page for testing edge functions directly
 const EdgeFunctionTester = () => {
-  const [functionName, setFunctionName] = useState("generate-speeches");
+  const [functionName, setFunctionName] = useState("process-payment");
   const [requestBody, setRequestBody] = useState(JSON.stringify({
     formData: {
       name: "Test User",
@@ -22,7 +21,6 @@ const EdgeFunctionTester = () => {
       graduationClass: "Class of 2024",
       tone: "inspirational"
     },
-    purchaseId: "test-purchase-id",
     email: "test@example.com",
     customerReference: "GSW-TEST123"
   }, null, 2));
@@ -35,7 +33,68 @@ const EdgeFunctionTester = () => {
     "generate-speeches",
     "send-emails",
     "process-payment",
+    "stripe-webhook"
   ];
+
+  // Function to set example request bodies based on selected function
+  const setExampleRequestBody = (fn: string) => {
+    let exampleBody = {};
+    
+    switch(fn) {
+      case "process-payment":
+        exampleBody = {
+          formData: {
+            name: "Test User",
+            email: "test@example.com",
+            role: "valedictorian",
+            institution: "Test University",
+            graduationClass: "Class of 2024",
+            tone: "inspirational"
+          },
+          email: "test@example.com"
+        };
+        break;
+      case "generate-speeches":
+        exampleBody = {
+          formData: {
+            name: "Test User",
+            email: "test@example.com",
+            role: "valedictorian",
+            institution: "Test University",
+            graduationClass: "Class of 2024",
+            tone: "inspirational"
+          },
+          purchaseId: "test-purchase-id",
+          email: "test@example.com",
+          customerReference: "GSW-TEST123"
+        };
+        break;
+      case "send-emails":
+        exampleBody = {
+          purchaseId: "test-purchase-id",
+          email: "test@example.com",
+          formData: {
+            name: "Test User",
+            role: "valedictorian"
+          },
+          speechVersions: [
+            { title: "Test Speech 1", content: "This is test speech content 1" },
+            { title: "Test Speech 2", content: "This is test speech content 2" }
+          ],
+          customerReference: "GSW-TEST123"
+        };
+        break;
+      default:
+        exampleBody = {};
+    }
+    
+    setRequestBody(JSON.stringify(exampleBody, null, 2));
+  };
+
+  // Set the example request body when the function name changes
+  useEffect(() => {
+    setExampleRequestBody(functionName);
+  }, [functionName]);
 
   const handleInvoke = async () => {
     try {
@@ -72,7 +131,10 @@ const EdgeFunctionTester = () => {
           <Label htmlFor="function-select">Function Name</Label>
           <Select 
             value={functionName} 
-            onValueChange={setFunctionName}
+            onValueChange={(value) => {
+              setFunctionName(value);
+              setExampleRequestBody(value);
+            }}
           >
             <SelectTrigger id="function-select" className="w-full">
               <SelectValue placeholder="Select a function" />
@@ -86,13 +148,24 @@ const EdgeFunctionTester = () => {
         </div>
         
         <div className="mb-4">
-          <Label htmlFor="request-body">Request Body (JSON)</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="request-body">Request Body (JSON)</Label>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setExampleRequestBody(functionName)}
+              className="ml-2"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reset Example
+            </Button>
+          </div>
           <Textarea
             id="request-body"
             value={requestBody}
             onChange={(e) => setRequestBody(e.target.value)}
             rows={10}
-            className="font-mono text-sm"
+            className="font-mono text-sm mt-2"
           />
         </div>
         

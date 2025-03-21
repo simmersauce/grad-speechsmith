@@ -27,6 +27,7 @@ serve(async (req) => {
 
   try {
     console.log("Process payment function called");
+    console.log("Request headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     
     // Check that required environment variables are set
     if (!stripeSecretKey) {
@@ -45,7 +46,13 @@ serve(async (req) => {
       throw new Error("Invalid request format");
     });
     
-    const { formData, customerEmail } = requestData;
+    console.log("Request data:", JSON.stringify(requestData));
+    
+    // Extract data from the request
+    const { formData, email, customerEmail } = requestData;
+    
+    // Use customerEmail or email (for backward compatibility)
+    const finalEmail = customerEmail || email;
 
     // Validate request data
     if (!formData) {
@@ -53,19 +60,19 @@ serve(async (req) => {
       throw new Error("Missing form data");
     }
 
-    if (!customerEmail) {
-      console.error("Missing customer email");
+    if (!finalEmail) {
+      console.error("Missing customer email - not found in either 'customerEmail' or 'email' field");
       throw new Error("Missing customer email");
     }
 
-    console.log("Storing form data for:", customerEmail);
+    console.log("Storing form data for:", finalEmail);
 
     // Store the form data in Supabase first
     const { data: storedData, error: storeError } = await supabase
       .from('pending_form_data')
       .insert({
         form_data: formData,
-        customer_email: customerEmail
+        customer_email: finalEmail
       })
       .select();
 
@@ -104,7 +111,7 @@ serve(async (req) => {
           'mode': 'payment',
           'success_url': `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
           'cancel_url': `${origin}/preview`,
-          'customer_email': customerEmail,
+          'customer_email': finalEmail,
           'metadata[formDataId]': formDataId.toString()
         })
       });
