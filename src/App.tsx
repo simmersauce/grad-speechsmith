@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Index from './pages/Index';
@@ -9,7 +10,7 @@ import NotFound from './pages/NotFound';
 import EmailTestTool from "./components/payment/EmailTestTool";
 import { TEST_MODE } from './utils/testMode';
 import EdgeFunctionTester from './pages/EdgeFunctionTester';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from './components/ui/toaster';
 
 function App() {
   return (
