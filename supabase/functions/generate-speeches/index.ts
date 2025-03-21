@@ -4,6 +4,7 @@ import { corsHeaders, createResponse, generateSpeechPrompt } from "./utils.ts";
 import { supabase, saveSpeechVersion, updatePurchaseStatus } from "./database.ts";
 import { generateSpeechWithOpenAI } from "./openai.ts";
 import { sendEmailNotification } from "./emailNotifier.ts";
+import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
 
 // Initialize Supabase URL for function calls
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -51,8 +52,10 @@ serve(async (req) => {
       return createResponse({ error: "Missing form data in request" }, 400);
     }
     
-    // For testing, allow missing purchaseId
-    const finalPurchaseId = purchaseId || `test-${new Date().getTime()}`;
+    // Generate a valid UUID for testing
+    const finalPurchaseId = purchaseId ? 
+      (purchaseId.startsWith('test-') ? uuidv4() : purchaseId) : 
+      uuidv4();
     
     console.log("Generating speeches for purchase:", finalPurchaseId);
     console.log("Using customer reference:", customerReference || "No reference provided");
@@ -96,20 +99,30 @@ serve(async (req) => {
     }
 
     // Update purchase record to mark speeches as generated
-    await updatePurchaseStatus(finalPurchaseId, { speeches_generated: true });
+    try {
+      await updatePurchaseStatus(finalPurchaseId, { speeches_generated: true });
+    } catch (updateError) {
+      console.error("Error updating purchase status:", updateError);
+      // Continue execution even if update fails
+    }
 
     // Only call send-emails if we have an email
     if (email) {
-      console.log(`Sending email notification to ${email}`);
-      // Call the send-emails function to deliver the speeches
-      await sendEmailNotification(
-        supabaseUrl, 
-        supabaseKey, 
-        finalPurchaseId, 
-        email, 
-        formData, 
-        speechVersions
-      );
+      try {
+        console.log(`Sending email notification to ${email}`);
+        // Call the send-emails function to deliver the speeches
+        await sendEmailNotification(
+          supabaseUrl, 
+          supabaseKey, 
+          finalPurchaseId, 
+          email, 
+          formData, 
+          speechVersions
+        );
+      } catch (emailError) {
+        console.error("Error sending email notification:", emailError);
+        // Continue execution even if email sending fails
+      }
     } else {
       console.log("No email provided, skipping email notification");
     }

@@ -8,6 +8,8 @@ import { AlertCircle, PlayCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "@/hooks/use-toast";
 
 // A hidden utility page for testing edge functions directly
 const EdgeFunctionTester = () => {
@@ -71,24 +73,40 @@ const EdgeFunctionTester = () => {
             acknowledgements: "Family, friends, and supportive faculty",
             graduationType: "College graduation"
           },
-          purchaseId: "test-purchase-id",
+          // For testing, we'll use a proper UUID string format
+          purchaseId: uuidv4(),
           email: "test@example.com",
           customerReference: "GSW-TEST123"
         };
         break;
       case "send-emails":
         exampleBody = {
-          purchaseId: "test-purchase-id",
+          // For testing, we'll use a proper UUID string format
+          purchaseId: uuidv4(),
           email: "test@example.com",
           formData: {
             name: "Test User",
             role: "valedictorian"
           },
           speechVersions: [
-            { id: "test-speech-1", content: "This is test speech content 1", versionNumber: 1, tone: "inspirational", versionType: "Version 1" },
-            { id: "test-speech-2", content: "This is test speech content 2", versionNumber: 2, tone: "inspirational", versionType: "Version 2" }
+            { id: uuidv4(), content: "This is test speech content 1", versionNumber: 1, tone: "inspirational", versionType: "Version 1" },
+            { id: uuidv4(), content: "This is test speech content 2", versionNumber: 2, tone: "inspirational", versionType: "Version 2" }
           ],
           customerReference: "GSW-TEST123"
+        };
+        break;
+      case "stripe-webhook":
+        exampleBody = {
+          type: "checkout.session.completed",
+          data: {
+            object: {
+              id: "cs_test_" + uuidv4().replace(/-/g, ""),
+              customer_email: "test@example.com",
+              metadata: {
+                formDataId: "123456"
+              }
+            }
+          }
         };
         break;
       default:
@@ -109,6 +127,11 @@ const EdgeFunctionTester = () => {
       setError(null);
       setResult(null);
       
+      toast({
+        title: "Invoking Function",
+        description: `Calling ${functionName}...`,
+      });
+      
       console.log(`Invoking ${functionName} with body:`, requestBody);
       
       const { data, error } = await supabase.functions.invoke(functionName, {
@@ -121,9 +144,21 @@ const EdgeFunctionTester = () => {
       
       setResult(data);
       console.log("Function result:", data);
+      
+      toast({
+        title: "Success",
+        description: `${functionName} executed successfully`,
+        variant: "default"
+      });
     } catch (err: any) {
       console.error("Error invoking function:", err);
       setError(err.message || "An error occurred");
+      
+      toast({
+        title: "Error",
+        description: err.message || "An error occurred while invoking the function",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
