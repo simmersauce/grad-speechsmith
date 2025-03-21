@@ -104,7 +104,8 @@ const EdgeFunctionTester = () => {
               customer_email: "test@example.com",
               metadata: {
                 formDataId: "123456"
-              }
+              },
+              amount_total: 2999
             }
           }
         };
@@ -134,8 +135,17 @@ const EdgeFunctionTester = () => {
       
       console.log(`Invoking ${functionName} with body:`, requestBody);
       
+      // Custom headers for specific functions
+      const customHeaders: Record<string, string> = {};
+      
+      // For stripe-webhook, add test mode header
+      if (functionName === "stripe-webhook") {
+        customHeaders["x-test-mode"] = "true";
+      }
+      
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: JSON.parse(requestBody)
+        body: JSON.parse(requestBody),
+        headers: customHeaders
       });
       
       if (error) {

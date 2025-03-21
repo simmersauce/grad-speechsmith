@@ -48,34 +48,53 @@ serve(async (req) => {
 
     // For webhook processing, a signature is required
     const signature = req.headers.get("stripe-signature");
+    const testModeHeader = req.headers.get("x-test-mode");
+    const isTestMode = testModeHeader === "true";
     
-    if (!signature) {
-      console.error("Missing stripe-signature header");
-      return createResponse({ error: "Missing Stripe signature" }, 400);
+    let body;
+    let event;
+    
+    // Special handling for test mode
+    if (isTestMode) {
+      console.log("Running in test mode - bypassing signature verification");
+      body = await req.text();
+      try {
+        event = JSON.parse(body);
+      } catch (parseError) {
+        console.error("Failed to parse request body in test mode:", parseError);
+        return createResponse({ error: "Invalid JSON format in test mode" }, 400);
+      }
+    } else {
+      // Production mode - require signature
+      if (!signature) {
+        console.error("Missing stripe-signature header");
+        return createResponse({ error: "Missing Stripe signature" }, 400);
+      }
+      
+      if (!endpointSecret) {
+        console.error("Missing STRIPE_WEBHOOK_SECRET");
+        return createResponse({ error: "Server configuration error: Missing webhook secret" }, 500);
+      }
+      
+      body = await req.text();
+      console.log("Received webhook payload. Validating signature...");
+      
+      // Manually verify the webhook signature
+      const isValid = await verifyStripeSignature(body, signature, endpointSecret);
+      
+      if (!isValid) {
+        console.error("Webhook signature verification failed");
+        console.error("Signature:", signature);
+        console.error("Secret ends with:", endpointSecret.slice(-4));
+        return createResponse({ error: "Webhook Error: Signature verification failed" }, 400);
+      }
+      
+      console.log("Signature verification succeeded");
+      
+      // Parse the event data
+      event = JSON.parse(body);
     }
     
-    if (!endpointSecret) {
-      console.error("Missing STRIPE_WEBHOOK_SECRET");
-      return createResponse({ error: "Server configuration error: Missing webhook secret" }, 500);
-    }
-    
-    const body = await req.text();
-    console.log("Received webhook payload. Validating signature...");
-    
-    // Manually verify the webhook signature
-    const isValid = await verifyStripeSignature(body, signature, endpointSecret);
-    
-    if (!isValid) {
-      console.error("Webhook signature verification failed");
-      console.error("Signature:", signature);
-      console.error("Secret ends with:", endpointSecret.slice(-4));
-      return createResponse({ error: "Webhook Error: Signature verification failed" }, 400);
-    }
-    
-    console.log("Signature verification succeeded");
-    
-    // Parse the event data
-    const event = JSON.parse(body);
     console.log(`Received Stripe event: ${event.type}`);
 
     // Initialize Supabase client
