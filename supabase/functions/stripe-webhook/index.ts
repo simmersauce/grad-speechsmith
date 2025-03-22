@@ -21,6 +21,19 @@ const stripe = new Stripe(stripeSecretKey || "", {
   apiVersion: '2023-10-16', // Specify the Stripe API version
 });
 
+// Add _preflightOptions to disable JWT auth
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-test-mode',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+// This disables JWT verification for this function
+export const _preflightOptions = {
+  cors: corsHeaders,
+  authjwt: false,
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
