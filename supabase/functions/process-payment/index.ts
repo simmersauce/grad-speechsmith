@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-test-mode',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -28,6 +28,43 @@ serve(async (req) => {
   try {
     console.log("Process payment function called");
     console.log("Request headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+    
+    // Check for test mode
+    const testModeHeader = req.headers.get("x-test-mode");
+    const isTestMode = testModeHeader === "true";
+    
+    if (isTestMode) {
+      console.log("Running in test mode - bypassing Stripe API call");
+      // Get request data
+      const requestData = await req.json().catch(error => {
+        console.error("Error parsing request JSON:", error);
+        throw new Error("Invalid request format");
+      });
+      
+      const { formData, email, customerEmail } = requestData;
+      const finalEmail = customerEmail || email;
+      
+      // Validate request data
+      if (!formData) {
+        throw new Error("Missing form data");
+      }
+      
+      if (!finalEmail) {
+        throw new Error("Missing customer email");
+      }
+      
+      // Return a mock response for test mode
+      return new Response(
+        JSON.stringify({ 
+          sessionId: "test_session_" + Date.now(),
+          url: `${req.headers.get("origin") || "https://lovable.dev"}/payment-success?session_id=test_session_id&test_mode=true`
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
+    }
     
     // Check that required environment variables are set
     if (!stripeSecretKey) {
@@ -141,11 +178,11 @@ serve(async (req) => {
           status: 200
         }
       );
-    } catch (stripeError: any) {
+    } catch (stripeError) {
       console.error("Stripe error:", stripeError);
       throw new Error(`Stripe error: ${stripeError.message || 'Unknown error'}`);
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in process-payment function:", error);
     
     // Return a properly formatted error response

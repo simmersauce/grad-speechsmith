@@ -8,7 +8,7 @@
  * @param secret The webhook secret
  * @returns Whether the signature is valid
  */
-export async function verifyStripeSignature(payload: string, signature: string, secret: string): Promise<boolean> {
+export async function verifyStripeSignature(payload, signature, secret) {
   try {
     // Get timestamp and signatures from the signature header
     const signatureParts = signature.split(',');
@@ -85,10 +85,10 @@ export async function verifyStripeSignature(payload: string, signature: string, 
       const isEqual = timingSafeEqual(computedSignature, expectedSignature);
       console.log(`Signature verification result: ${isEqual ? 'Valid' : 'Invalid'}`);
       return isEqual;
-    } catch (cryptoError: any) {
+    } catch (cryptoError) {
       throw new Error(`Error during crypto operations: ${cryptoError.message}`);
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error in signature verification process:", err);
     console.error("Stack trace:", err.stack || "No stack trace available");
     throw err; // Re-throw to be handled by the caller
@@ -99,7 +99,7 @@ export async function verifyStripeSignature(payload: string, signature: string, 
  * Performs a timing-safe comparison of two strings
  * This helps prevent timing attacks when comparing signatures
  */
-function timingSafeEqual(a: string, b: string): boolean {
+function timingSafeEqual(a, b) {
   if (a.length !== b.length) {
     console.log(`Length mismatch: ${a.length} vs ${b.length}`);
     return false;

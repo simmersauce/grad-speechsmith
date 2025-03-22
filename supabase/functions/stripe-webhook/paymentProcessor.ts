@@ -2,14 +2,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Initialize Supabase client
-let supabase: ReturnType<typeof createClient> | null = null;
+let supabase = null;
 
 /**
  * Initialize the Supabase client
  * @param supabaseUrl Supabase URL
  * @param supabaseKey Supabase service role key
  */
-export function initializeSupabase(supabaseUrl: string, supabaseKey: string) {
+export function initializeSupabase(supabaseUrl, supabaseKey) {
   supabase = createClient(supabaseUrl, supabaseKey);
 }
 
@@ -17,7 +17,7 @@ export function initializeSupabase(supabaseUrl: string, supabaseKey: string) {
  * Generate a unique customer reference
  * @returns A formatted customer reference string
  */
-export const generateCustomerReference = (): string => {
+export const generateCustomerReference = () => {
   return `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 };
 
@@ -26,7 +26,7 @@ export const generateCustomerReference = (): string => {
  * @param session The Stripe checkout session object
  * @returns The result of the processing operation
  */
-export async function processCompletedCheckout(session: any) {
+export async function processCompletedCheckout(session) {
   if (!supabase) {
     throw new Error("Supabase client not initialized");
   }
@@ -106,7 +106,7 @@ export async function processCompletedCheckout(session: any) {
     purchaseId: purchaseData[0].id,
     customerEmail,
     formData,
-    customerReference  // Return the customer reference
+    customerReference
   };
 }
 
@@ -119,13 +119,13 @@ export async function processCompletedCheckout(session: any) {
  * @param supabaseKey The Supabase service role key
  */
 export async function triggerSpeechGeneration(
-  purchaseId: string,
-  formData: any,
-  email: string,
-  supabaseUrl: string,
-  supabaseKey: string,
-  customerReference: string
-): Promise<void> {
+  purchaseId,
+  formData,
+  email,
+  supabaseUrl,
+  supabaseKey,
+  customerReference
+) {
   try {
     console.log("Triggering speech generation for purchase:", purchaseId);
     console.log("Using customer reference:", customerReference);
@@ -142,7 +142,7 @@ export async function triggerSpeechGeneration(
         formData,
         purchaseId,
         email,
-        customerReference  // Pass the customer reference to the generate-speeches function
+        customerReference
       })
     });
     
@@ -154,7 +154,7 @@ export async function triggerSpeechGeneration(
       const responseData = await generateResponse.json();
       console.log("Speeches generation response:", JSON.stringify(responseData));
     }
-  } catch (generateError: any) {
+  } catch (generateError) {
     console.error("Error triggering speech generation:", generateError);
     // Log the error but continue
   }

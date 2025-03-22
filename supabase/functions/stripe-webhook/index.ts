@@ -111,7 +111,7 @@ serve(async (req) => {
         }
         
         console.log("Signature verification succeeded");
-      } catch (verificationError: any) {
+      } catch (verificationError) {
         console.error("Error during signature verification:", verificationError.message);
         return createResponse({ 
           error: `Webhook Error: Signature verification error: ${verificationError.message}` 
@@ -121,7 +121,7 @@ serve(async (req) => {
       // Parse the event data
       try {
         event = JSON.parse(body);
-      } catch (parseError: any) {
+      } catch (parseError) {
         console.error("Failed to parse webhook payload:", parseError);
         return createResponse({ error: `Invalid JSON format: ${parseError.message}` }, 400);
       }
@@ -132,7 +132,7 @@ serve(async (req) => {
     // Initialize Supabase client
     try {
       initializeSupabase(supabaseUrl, supabaseKey);
-    } catch (initError: any) {
+    } catch (initError) {
       console.error("Failed to initialize Supabase client:", initError);
       return createResponse({ error: `Database initialization error: ${initError.message}` }, 500);
     }
@@ -152,7 +152,7 @@ serve(async (req) => {
         const { purchaseId, customerEmail, formData, customerReference } = await processCompletedCheckout(session);
         console.log("Checkout processed successfully. Purchase ID:", purchaseId);
         
-        // Generate the speeches
+        // Generate the speeches asynchronously
         try {
           await triggerSpeechGeneration(
             purchaseId, 
@@ -163,12 +163,12 @@ serve(async (req) => {
             customerReference
           );
           console.log("Speech generation triggered successfully for purchase:", purchaseId);
-        } catch (generationError: any) {
+        } catch (generationError) {
           console.error("Error triggering speech generation:", generationError);
           console.error("Full error details:", JSON.stringify(generationError));
           // We still return 200 to Stripe, but log the error in detail
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error processing checkout:", error);
         console.error("Full error details:", JSON.stringify(error));
         // We'll still return a 200 to Stripe to acknowledge receipt, but log the error
@@ -179,7 +179,7 @@ serve(async (req) => {
 
     // Return a 200 response to acknowledge receipt of the event
     return createResponse({ received: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Critical error in stripe-webhook function:", error);
     console.error("Stack trace:", error.stack || "No stack trace available");
     return createResponse({ error: error.message || "Webhook Error" }, 400);
