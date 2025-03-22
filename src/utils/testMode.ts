@@ -2,6 +2,20 @@
 // Test mode flag - set to false to disable test mode
 export const TEST_MODE = false;
 
+// Local storage key for test mode
+export const TEST_MODE_STORAGE_KEY = 'graduation_speech_test_mode';
+
+// Get test mode from local storage if available
+export const getTestModeState = (): boolean => {
+  const storedValue = localStorage.getItem(TEST_MODE_STORAGE_KEY);
+  return storedValue ? JSON.parse(storedValue) : TEST_MODE;
+};
+
+// Set test mode in local storage
+export const setTestModeState = (enabled: boolean): void => {
+  localStorage.setItem(TEST_MODE_STORAGE_KEY, JSON.stringify(enabled));
+};
+
 // Dummy form data for testing
 export const dummyFormData = {
   name: "Alex Johnson",
@@ -46,4 +60,3 @@ Class of 2024, this is not the end of our story; it's merely the end of this cha
 Congratulations to each and every one of you. It has been an honor to walk this path alongside you, and I cannot wait to see the remarkable things we will accomplish.
 
 Thank you.`;
-

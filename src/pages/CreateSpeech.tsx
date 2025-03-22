@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -15,7 +16,8 @@ import TabHeader from "@/components/speech-form/TabHeader";
 import FormNavigation from "@/components/speech-form/FormNavigation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { TEST_MODE, dummyFormData } from "@/utils/testMode";
+import { getTestModeState, dummyFormData } from "@/utils/testMode";
+import TestModeSwitcher from "@/components/testing/TestModeSwitcher";
 
 const CreateSpeech = () => {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const CreateSpeech = () => {
   const [showOtherGraduationType, setShowOtherGraduationType] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formId, setFormId] = useState<string | null>(null);
+  const isTestMode = getTestModeState();
 
   const form = useForm<GraduationSpeechFormValues>({
     resolver: zodResolver(graduationSpeechFormSchema),
@@ -50,7 +53,7 @@ const CreateSpeech = () => {
   });
   
   useEffect(() => {
-    if (TEST_MODE) {
+    if (isTestMode) {
       Object.entries(dummyFormData).forEach(([key, value]) => {
         if (value) {
           form.setValue(key as any, value as any);
@@ -97,13 +100,13 @@ const CreateSpeech = () => {
         setShowOtherGraduationType(true);
       }
     }
-  }, [location.state, form]);
+  }, [location.state, form, isTestMode]);
   
   const onSubmit = async (values: GraduationSpeechFormValues) => {
     try {
       setIsSubmitting(true);
       
-      if (TEST_MODE) {
+      if (isTestMode) {
         toast({
           title: "Success",
           description: "Test mode: Your speech information has been saved!",
@@ -212,6 +215,12 @@ const CreateSpeech = () => {
       const values = form.getValues();
       setUserInputs((prev) => ({ ...prev, ...values }));
       
+      // In test mode, always proceed to the next tab without validation
+      if (isTestMode) {
+        setActiveTab((currentTabNumber + 1).toString());
+        return;
+      }
+      
       let isValid = true;
       if (currentTabNumber === 1) {
         isValid = await form.trigger([
@@ -301,6 +310,9 @@ const CreateSpeech = () => {
           />
         </form>
       </Form>
+      
+      {/* Test Mode Switcher */}
+      <TestModeSwitcher onSubmitForm={handleFinalSubmit} />
     </div>
   );
 };
