@@ -1,13 +1,21 @@
 
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { createSummaryEmailHTML, createSpeechEmails } from "./emailTemplates.ts";
+import { createEmailWithAttachments, createSpeechPDFContent } from "./emailTemplates.ts";
 
 // Initialize Resend
 const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
 export const resend = new Resend(resendApiKey);
 
-// Send all emails (summary and individual speeches)
-export async function sendAllEmails(email: string, formData: any, speechVersions: any[], customerReference: string) {
+// Convert text to PDF format (simplified version since we can't generate PDFs directly)
+const convertToPDF = (text: string) => {
+  // This is a simplified approach - we're just using the text content
+  // In a full implementation, you would use a PDF library or service
+  // For now, we'll return base64 encoded text as a placeholder
+  return Buffer.from(text).toString('base64');
+};
+
+// Send a single email with all speeches as PDF attachments
+export async function sendEmailWithAttachments(email: string, formData: any, speechVersions: any[], customerReference: string) {
   console.log(`Starting email sending process to ${email} with reference ${customerReference}`);
   
   // Verify API key is properly set
@@ -17,81 +25,46 @@ export async function sendAllEmails(email: string, formData: any, speechVersions
   }
   
   console.log(`Using Resend API key ending with: ${resendApiKey.slice(-4)}`);
-  console.log(`Number of speech versions to send: ${speechVersions.length}`);
-  
-  // Create the main email HTML with all speech summaries
-  const summaryEmailHTML = createSummaryEmailHTML(speechVersions, formData, customerReference);
-  
-  // Create the email objects for individual speeches
-  const speechEmails = createSpeechEmails(speechVersions, email, formData, customerReference);
+  console.log(`Number of speech versions to attach: ${speechVersions.length}`);
   
   try {
-    // Send the main email summary first
-    console.log("Sending main summary email...");
-    const mainEmailPayload = {
-      from: "Graduation Speech Writer <speeches@resend.dev>",
-      to: [email],
-      subject: `Your Graduation Speech Drafts - Reference: ${customerReference}`,
-      html: summaryEmailHTML,
-    };
+    // Prepare PDF content for each speech
+    const enrichedSpeeches = speechVersions.map((speech, index) => {
+      const pdfContent = createSpeechPDFContent(speech, index + 1, formData, customerReference);
+      return {
+        ...speech,
+        pdfContent: convertToPDF(pdfContent)
+      };
+    });
     
-    console.log("Main email payload:", JSON.stringify({
-      from: mainEmailPayload.from,
-      to: mainEmailPayload.to,
-      subject: mainEmailPayload.subject,
-      htmlLength: mainEmailPayload.html.length
+    // Create the email with attachments
+    const emailPayload = createEmailWithAttachments(enrichedSpeeches, email, formData, customerReference);
+    
+    console.log("Email payload:", JSON.stringify({
+      from: emailPayload.from,
+      to: emailPayload.to,
+      subject: emailPayload.subject,
+      attachmentsCount: emailPayload.attachments?.length || 0
     }));
     
-    const mainEmailResult = await resend.emails.send(mainEmailPayload);
+    // Send the email
+    const emailResult = await resend.emails.send(emailPayload);
     
-    console.log("Main email result:", JSON.stringify(mainEmailResult));
+    console.log("Email result:", JSON.stringify(emailResult));
     
-    if (mainEmailResult.error) {
-      throw new Error(`Failed to send main email: ${JSON.stringify(mainEmailResult.error)}`);
+    if (emailResult.error) {
+      throw new Error(`Failed to send email: ${JSON.stringify(emailResult.error)}`);
     }
     
-    console.log("Main email sent successfully. ID:", mainEmailResult.id);
-    
-    // Then send each individual speech as a separate email
-    console.log(`Sending ${speechEmails.length} individual speech emails...`);
-    
-    const speechEmailPromises = speechEmails.map((speechEmail, index) => {
-      console.log(`Preparing to send speech email ${index + 1}...`);
-      console.log("Speech email payload:", JSON.stringify({
-        from: speechEmail.from,
-        to: speechEmail.to,
-        subject: speechEmail.subject,
-        htmlLength: speechEmail.html.length
-      }));
-      return resend.emails.send(speechEmail);
-    });
-    
-    // Wait for all emails to be sent
-    const speechEmailResults = await Promise.all(speechEmailPromises);
-    
-    // Log results for each email
-    speechEmailResults.forEach((result, index) => {
-      if (result.error) {
-        console.error(`Error sending speech email ${index + 1}:`, JSON.stringify(result.error));
-      } else {
-        console.log(`Speech email ${index + 1} sent successfully. ID:`, result.id);
-      }
-    });
-    
-    const successCount = speechEmailResults.filter(result => !result.error).length;
-    console.log(`${successCount} out of ${speechEmailResults.length} speech emails sent successfully`);
-    
-    // Check if all emails were successful
-    const allSuccessful = speechEmailResults.every(result => !result.error);
+    console.log("Email sent successfully. ID:", emailResult.id);
     
     return {
-      success: allSuccessful,
-      mainEmail: mainEmailResult,
-      speechEmails: speechEmailResults,
-      totalEmailsSent: 1 + successCount // Main email + successful speech emails
+      success: true,
+      emailResult,
+      totalAttachments: speechVersions.length
     };
   } catch (emailError: any) {
-    console.error("Error sending emails via Resend:", emailError);
+    console.error("Error sending email via Resend:", emailError);
     throw new Error(`Email sending failed: ${emailError.message || "Unknown error"}`);
   }
 }

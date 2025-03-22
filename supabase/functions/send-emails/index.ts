@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, createResponse } from "./utils.ts";
 import { determineCustomerReference } from "./database.ts";
-import { sendAllEmails } from "./emailSender.ts";
+import { sendEmailWithAttachments } from "./emailSender.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -66,16 +66,16 @@ serve(async (req) => {
     const customerReference = await determineCustomerReference(purchaseId, providedReference);
     console.log("Using customer reference for emails:", customerReference);
     
-    // Send all emails (summary and individual speeches)
-    console.log("Calling sendAllEmails function...");
-    const emailResults = await sendAllEmails(email, formData, speechVersions, customerReference);
-    console.log("Email sending completed with results:", JSON.stringify(emailResults));
+    // Send a single email with all speeches as PDF attachments
+    console.log("Calling sendEmailWithAttachments function...");
+    const emailResult = await sendEmailWithAttachments(email, formData, speechVersions, customerReference);
+    console.log("Email sending completed with results:", JSON.stringify(emailResult));
     
     return createResponse({ 
       success: true,
-      message: "Emails sent successfully",
+      message: "Email with all speeches sent successfully",
       customerReference,
-      emailResults
+      emailResult
     });
     
   } catch (error: any) {
