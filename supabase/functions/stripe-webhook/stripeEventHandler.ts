@@ -1,5 +1,5 @@
 
-import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
+import Stripe from "https://esm.sh/stripe@13.3.0?target=deno";
 import { processCompletedCheckout, triggerSpeechGeneration } from "./paymentProcessor.ts";
 import { createResponse } from "./corsUtils.ts";
 
