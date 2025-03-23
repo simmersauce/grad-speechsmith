@@ -19,9 +19,9 @@ export async function handleCheckoutCompleted(session: any, supabaseUrl: string,
     const { purchaseId, customerEmail, formData, customerReference } = await processCompletedCheckout(session);
     console.log("Checkout processed successfully. Purchase ID:", purchaseId);
     
-    // Trigger speech generation without using nextTick or other Node.js patterns
+    // Trigger speech generation without using nextTick or async patterns that rely on Node.js
     try {
-      // Use await to properly catch errors
+      // Use direct await instead of process.nextTick or similar Node.js patterns
       await triggerSpeechGeneration(
         purchaseId, 
         formData, 
