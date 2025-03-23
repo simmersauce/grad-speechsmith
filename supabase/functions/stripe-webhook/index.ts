@@ -1,32 +1,9 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
-import { corsHeaders, createResponse } from "../send-emails/utils.ts";
 import { verifyStripeSignature } from "./signatureVerification.ts";
-import { 
-  initializeSupabase, 
-  processCompletedCheckout, 
-  triggerSpeechGeneration 
-} from "./paymentProcessor.ts";
-
-// Get environment variables
-const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
-
-// Initialize Stripe
-const stripe = new Stripe(stripeSecretKey || "", {
-  httpClient: Stripe.createFetchHttpClient(),
-  apiVersion: '2023-10-16', // Specify the Stripe API version
-});
-
-// Add _preflightOptions to disable JWT auth
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-test-mode',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { initializeSupabase } from "./paymentProcessor.ts";
+import { corsHeaders, createResponse, handleCorsOptions } from "./corsUtils.ts";
+import { handleCheckoutCompleted, parseStripeEvent, initializeStripe } from "./stripeEventHandler.ts";
 
 // This disables JWT verification for this function
 export const _preflightOptions = {
@@ -37,15 +14,18 @@ export const _preflightOptions = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      headers: corsHeaders,
-      status: 204 
-    });
+    return handleCorsOptions();
   }
 
   try {
     console.log("Webhook endpoint called");
     console.log("HTTP Method:", req.method);
+    
+    // Get environment variables
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
     
     // Log headers in a more readable way for debugging
     const headerEntries = Object.fromEntries(req.headers.entries());
@@ -72,6 +52,9 @@ serve(async (req) => {
       return createResponse({ error: "Server configuration error: Missing database credentials" }, 500);
     }
 
+    // Initialize Stripe client
+    initializeStripe(stripeSecretKey);
+
     // For webhook processing, a signature is required
     const signature = req.headers.get("stripe-signature");
     const testModeHeader = req.headers.get("x-test-mode");
@@ -85,7 +68,7 @@ serve(async (req) => {
       console.log("Running in test mode - bypassing signature verification");
       body = await req.text();
       try {
-        event = JSON.parse(body);
+        event = parseStripeEvent(body);
       } catch (parseError) {
         console.error("Failed to parse request body in test mode:", parseError);
         return createResponse({ error: "Invalid JSON format in test mode" }, 400);
@@ -133,9 +116,8 @@ serve(async (req) => {
       
       // Parse the event data
       try {
-        event = JSON.parse(body);
+        event = parseStripeEvent(body);
       } catch (parseError) {
-        console.error("Failed to parse webhook payload:", parseError);
         return createResponse({ error: `Invalid JSON format: ${parseError.message}` }, 400);
       }
     }
@@ -152,42 +134,7 @@ serve(async (req) => {
 
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      console.log("Session details:", JSON.stringify({
-        id: session.id,
-        customer_email: session.customer_email,
-        metadata: session.metadata,
-        payment_status: session.payment_status
-      }));
-      
-      try {
-        // Process the checkout session
-        const { purchaseId, customerEmail, formData, customerReference } = await processCompletedCheckout(session);
-        console.log("Checkout processed successfully. Purchase ID:", purchaseId);
-        
-        const speechGenPromise = triggerSpeechGeneration(
-          purchaseId, 
-          formData, 
-          customerEmail, 
-          supabaseUrl, 
-          supabaseKey,
-          customerReference
-        );
-        
-        // Use await to make sure any errors are caught here instead of in a process.nextTick
-        try {
-          await speechGenPromise;
-          console.log("Speech generation triggered successfully for purchase:", purchaseId);
-        } catch (generationError) {
-          console.error("Error triggering speech generation:", generationError);
-          console.error("Full error details:", JSON.stringify(generationError));
-          // We still return 200 to Stripe, but log the error in detail
-        }
-      } catch (error) {
-        console.error("Error processing checkout:", error);
-        console.error("Full error details:", JSON.stringify(error));
-        // We'll still return a 200 to Stripe to acknowledge receipt, but log the error
-      }
+      await handleCheckoutCompleted(event.data.object, supabaseUrl, supabaseKey);
     } else {
       console.log("Event type not handled:", event.type);
     }
