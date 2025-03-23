@@ -3,10 +3,6 @@
 
 /**
  * Verifies the Stripe webhook signature using HMAC-SHA256
- * @param payload The raw request body
- * @param signature The signature from the Stripe-Signature header
- * @param secret The webhook secret
- * @returns Whether the signature is valid
  */
 export async function verifyStripeSignature(payload, signature, secret) {
   try {
@@ -53,41 +49,37 @@ export async function verifyStripeSignature(payload, signature, secret) {
     const message = new TextEncoder().encode(signedPayload);
     
     // Create HMAC-SHA256
-    try {
-      const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        key,
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-      );
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      key,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    // Sign the payload
+    const signatureBuffer = await crypto.subtle.sign(
+      "HMAC",
+      cryptoKey,
+      message
+    );
+    
+    // Convert to hex string
+    const signatureBytes = new Uint8Array(signatureBuffer);
+    const computedSignature = Array.from(signatureBytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
       
-      // Sign the payload
-      const signatureBuffer = await crypto.subtle.sign(
-        "HMAC",
-        cryptoKey,
-        message
-      );
+    // Log signature details for debugging, but don't reveal full values
+    console.log(`Expected signature length: ${expectedSignature.length}`);
+    console.log(`Computed signature length: ${computedSignature.length}`);
+    console.log(`First 6 chars - Expected: ${expectedSignature.substring(0, 6)}, Computed: ${computedSignature.substring(0, 6)}`);
+    console.log(`Last 6 chars - Expected: ${expectedSignature.slice(-6)}, Computed: ${computedSignature.slice(-6)}`);
       
-      // Convert to hex string
-      const signatureBytes = new Uint8Array(signatureBuffer);
-      const computedSignature = Array.from(signatureBytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-        
-      // Log signature details for debugging, but don't reveal full values
-      console.log(`Expected signature length: ${expectedSignature.length}`);
-      console.log(`Computed signature length: ${computedSignature.length}`);
-      console.log(`First 6 chars - Expected: ${expectedSignature.substring(0, 6)}, Computed: ${computedSignature.substring(0, 6)}`);
-      console.log(`Last 6 chars - Expected: ${expectedSignature.slice(-6)}, Computed: ${computedSignature.slice(-6)}`);
-        
-      // Compare signatures using a timing-safe comparison
-      const isEqual = timingSafeEqual(computedSignature, expectedSignature);
-      console.log(`Signature verification result: ${isEqual ? 'Valid' : 'Invalid'}`);
-      return isEqual;
-    } catch (cryptoError) {
-      throw new Error(`Error during crypto operations: ${cryptoError.message}`);
-    }
+    // Compare signatures using a timing-safe comparison
+    const isEqual = timingSafeEqual(computedSignature, expectedSignature);
+    console.log(`Signature verification result: ${isEqual ? 'Valid' : 'Invalid'}`);
+    return isEqual;
   } catch (err) {
     console.error("Error in signature verification process:", err);
     console.error("Stack trace:", err.stack || "No stack trace available");

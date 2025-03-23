@@ -6,8 +6,6 @@ let supabase = null;
 
 /**
  * Initialize the Supabase client
- * @param supabaseUrl Supabase URL
- * @param supabaseKey Supabase service role key
  */
 export function initializeSupabase(supabaseUrl, supabaseKey) {
   supabase = createClient(supabaseUrl, supabaseKey);
@@ -15,7 +13,6 @@ export function initializeSupabase(supabaseUrl, supabaseKey) {
 
 /**
  * Generate a unique customer reference
- * @returns A formatted customer reference string
  */
 export const generateCustomerReference = () => {
   return `GSW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -23,8 +20,6 @@ export const generateCustomerReference = () => {
 
 /**
  * Process a completed checkout session
- * @param session The Stripe checkout session object
- * @returns The result of the processing operation
  */
 export async function processCompletedCheckout(session) {
   if (!supabase) {
@@ -112,11 +107,6 @@ export async function processCompletedCheckout(session) {
 
 /**
  * Trigger speech generation for a purchase
- * @param purchaseId The ID of the purchase
- * @param formData The form data for generating speeches
- * @param email The customer's email
- * @param supabaseUrl The Supabase URL for the function endpoint
- * @param supabaseKey The Supabase service role key
  */
 export async function triggerSpeechGeneration(
   purchaseId,
@@ -126,36 +116,32 @@ export async function triggerSpeechGeneration(
   supabaseKey,
   customerReference
 ) {
-  try {
-    console.log("Triggering speech generation for purchase:", purchaseId);
-    console.log("Using customer reference:", customerReference);
-    
-    // Fix the authorization header format by using proper bearer token format
-    const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speeches`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseKey}`,
-        "apikey": supabaseKey  // Add apikey header as a fallback
-      },
-      body: JSON.stringify({
-        formData,
-        purchaseId,
-        email,
-        customerReference
-      })
-    });
-    
-    if (!generateResponse.ok) {
-      const errorText = await generateResponse.text();
-      console.error(`Failed to generate speeches: Status ${generateResponse.status}, Response: ${errorText}`);
-      throw new Error(`Failed to generate speeches: ${generateResponse.status} - ${errorText}`);
-    } else {
-      const responseData = await generateResponse.json();
-      console.log("Speeches generation response:", JSON.stringify(responseData));
-    }
-  } catch (generateError) {
-    console.error("Error triggering speech generation:", generateError);
-    // Log the error but continue
+  console.log("Triggering speech generation for purchase:", purchaseId);
+  console.log("Using customer reference:", customerReference);
+  
+  // Fix the authorization header format by using proper bearer token format
+  const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-speeches`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${supabaseKey}`,
+      "apikey": supabaseKey  // Add apikey header as a fallback
+    },
+    body: JSON.stringify({
+      formData,
+      purchaseId,
+      email,
+      customerReference
+    })
+  });
+  
+  if (!generateResponse.ok) {
+    const errorText = await generateResponse.text();
+    console.error(`Failed to generate speeches: Status ${generateResponse.status}, Response: ${errorText}`);
+    throw new Error(`Failed to generate speeches: ${generateResponse.status} - ${errorText}`);
+  } else {
+    const responseData = await generateResponse.json();
+    console.log("Speeches generation response:", JSON.stringify(responseData));
+    return responseData;
   }
 }

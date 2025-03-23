@@ -165,16 +165,18 @@ serve(async (req) => {
         const { purchaseId, customerEmail, formData, customerReference } = await processCompletedCheckout(session);
         console.log("Checkout processed successfully. Purchase ID:", purchaseId);
         
-        // Generate the speeches asynchronously
+        const speechGenPromise = triggerSpeechGeneration(
+          purchaseId, 
+          formData, 
+          customerEmail, 
+          supabaseUrl, 
+          supabaseKey,
+          customerReference
+        );
+        
+        // Use await to make sure any errors are caught here instead of in a process.nextTick
         try {
-          await triggerSpeechGeneration(
-            purchaseId, 
-            formData, 
-            customerEmail, 
-            supabaseUrl, 
-            supabaseKey,
-            customerReference
-          );
+          await speechGenPromise;
           console.log("Speech generation triggered successfully for purchase:", purchaseId);
         } catch (generationError) {
           console.error("Error triggering speech generation:", generationError);
