@@ -6,12 +6,13 @@ import { createEmailWithAttachments, createSpeechPDFContent } from "./emailTempl
 const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
 export const resend = new Resend(resendApiKey);
 
-// Convert text to PDF format (simplified version since we can't generate PDFs directly)
+// Convert text to base64 encoded string for PDF placeholder
 const convertToPDF = (text: string) => {
-  // This is a simplified approach - we're just using the text content
-  // In a full implementation, you would use a PDF library or service
-  // For now, we'll return base64 encoded text as a placeholder
-  return Buffer.from(text).toString('base64');
+  // Use TextEncoder and btoa instead of Buffer for Deno compatibility
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  // Convert Uint8Array to base64 string using btoa
+  return btoa(String.fromCharCode(...new Uint8Array(data)));
 };
 
 // Send a single email with all speeches as PDF attachments
