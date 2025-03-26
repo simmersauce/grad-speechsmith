@@ -168,8 +168,6 @@ const PaymentSuccess = () => {
                   <ul className="space-y-2 text-sm text-gray-600">
                     <li>• Our AI is generating 3 unique speech drafts for you</li>
                     <li>• You'll receive an email with all versions within 5-10 minutes</li>
-                    <li>• Each version will have a different tone and approach</li>
-                    <li>• You can choose the one you like best or mix elements from all three</li>
                     <li>• Your reference number will be included in your email</li>
                   </ul>
                 </div>
