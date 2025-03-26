@@ -5,15 +5,15 @@ import TestimonialCard from "./TestimonialCard";
 // Testimonial data
 const testimonials = [
   {
-    text: "Delivering a speech to my entire graduating class felt overwhelming, but Toastie made it so much easier. They helped me craft a speech that was both inspiring and personal, capturing our shared journey perfectly. It was a moment I'll never forget.",
+    text: "Delivering a speech to my entire graduating class felt overwhelming, but Gradsmith made it so much easier. They helped me craft a speech that was both inspiring and personal, capturing our shared journey perfectly. It was a moment I'll never forget.",
     type: "Valedictorian"
   },
   {
-    text: "Speaking at the graduation was such an honor, but I didn't know where to begin. Toastie helped me organize my ideas into a speech that was motivational and heartfelt. The feedback I received after the event was incredible!",
+    text: "Speaking at the graduation was such an honor, but I didn't know where to begin. Gradsmith helped me organize my ideas into a speech that was motivational and heartfelt. The feedback I received after the event was incredible!",
     type: "Guest Speaker"
   },
   {
-    text: "As an alumnus, I wanted to inspire the next generation, but I wasn't sure how to put my thoughts into words. Toastie created a speech that celebrated their accomplishments and encouraged them to embrace the future with confidence. It was perfect.",
+    text: "As an alumnus, I wanted to inspire the next generation, but I wasn't sure how to put my thoughts into words. Gradsmith created a speech that celebrated their accomplishments and encouraged them to embrace the future with confidence. It was perfect.",
     type: "Alumni"
   },
   {
