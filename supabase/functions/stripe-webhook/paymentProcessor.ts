@@ -19,7 +19,7 @@ export const generateCustomerReference = () => {
 };
 
 /**
- * Process a completed checkout session
+ * Process a completed checkout session with idempotency check
  */
 export async function processCompletedCheckout(session) {
   if (!supabase) {
@@ -27,6 +27,25 @@ export async function processCompletedCheckout(session) {
   }
   
   console.log("Processing completed checkout session:", session.id);
+  
+  // Idempotency check: First check if we've already processed this session
+  const { data: existingPurchase, error: checkError } = await supabase
+    .from('speech_purchases')
+    .select('id')
+    .eq('stripe_session_id', session.id)
+    .maybeSingle();
+    
+  if (checkError) {
+    console.error("Error checking for existing purchase:", checkError);
+    // Continue processing as we can't determine if it's already processed
+  } else if (existingPurchase) {
+    console.log(`Session ${session.id} has already been processed, skipping`);
+    // Return the existing purchase ID to allow further operations if needed
+    return {
+      purchaseId: existingPurchase.id,
+      alreadyProcessed: true
+    };
+  }
   
   // Get the formDataId from the session metadata
   const formDataId = session.metadata?.formDataId;
@@ -43,7 +62,7 @@ export async function processCompletedCheckout(session) {
     .from('pending_form_data')
     .select('*')
     .eq('id', formDataId)
-    .single();
+    .maybeSingle();
     
   if (pendingError) {
     console.error("Error retrieving pending form data:", pendingError);
@@ -101,7 +120,8 @@ export async function processCompletedCheckout(session) {
     purchaseId: purchaseData[0].id,
     customerEmail,
     formData,
-    customerReference
+    customerReference,
+    alreadyProcessed: false
   };
 }
 
@@ -145,3 +165,4 @@ export async function triggerSpeechGeneration(
     return responseData;
   }
 }
+

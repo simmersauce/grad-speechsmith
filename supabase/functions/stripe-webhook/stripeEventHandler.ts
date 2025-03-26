@@ -15,28 +15,41 @@ export async function handleCheckoutCompleted(session: any, supabaseUrl: string,
   }));
   
   try {
-    // Process the checkout session
-    const { purchaseId, customerEmail, formData, customerReference } = await processCompletedCheckout(session);
-    console.log("Checkout processed successfully. Purchase ID:", purchaseId);
+    // Process the checkout session with idempotency check
+    const result = await processCompletedCheckout(session);
+    console.log("Checkout processed successfully. Purchase ID:", result.purchaseId);
     
-    // Trigger speech generation without using nextTick or async patterns that rely on Node.js
-    try {
-      // Use direct await instead of process.nextTick or similar Node.js patterns
-      await triggerSpeechGeneration(
-        purchaseId, 
-        formData, 
-        customerEmail, 
-        supabaseUrl, 
-        supabaseKey,
-        customerReference
-      );
-      console.log("Speech generation triggered successfully for purchase:", purchaseId);
-    } catch (generationError) {
-      console.error("Error triggering speech generation:", generationError);
-      console.error("Full error details:", JSON.stringify(generationError));
-      // We still return 200 to Stripe, but log the error in detail
+    if (result.alreadyProcessed) {
+      console.log(`Session ${session.id} was already processed - skipping speech generation`);
+      return true;
     }
     
+    // Use background processing for the heavy work
+    EdgeRuntime.waitUntil((async () => {
+      try {
+        const startTime = Date.now();
+        console.log("Starting background speech generation for purchase:", result.purchaseId);
+        
+        await triggerSpeechGeneration(
+          result.purchaseId, 
+          result.formData, 
+          result.customerEmail, 
+          supabaseUrl, 
+          supabaseKey,
+          result.customerReference
+        );
+        
+        const duration = Date.now() - startTime;
+        console.log(`Speech generation completed in background after ${duration}ms for purchase:`, result.purchaseId);
+      } catch (bgError) {
+        console.error("Error in background speech generation:", bgError);
+        console.error("Full error details:", JSON.stringify(bgError));
+        // The error is logged but doesn't affect the webhook response
+      }
+    })());
+    
+    // Return immediately while background processing continues
+    console.log("Webhook handler completed successfully, background processing started");
     return true;
   } catch (error) {
     console.error("Error processing checkout:", error);

@@ -11,6 +11,15 @@ export const _preflightOptions = {
   authjwt: false,
 };
 
+// Declare the EdgeRuntime interface if it's not already declared
+declare global {
+  interface EdgeRuntime {
+    waitUntil(promise: Promise<any>): void;
+  }
+  
+  var EdgeRuntime: EdgeRuntime;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {

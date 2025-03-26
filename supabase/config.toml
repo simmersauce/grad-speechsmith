@@ -7,3 +7,5 @@ verify_jwt = false
 [functions.send-emails]
 verify_jwt = false
 
+[functions.generate-speeches]
+verify_jwt = false
