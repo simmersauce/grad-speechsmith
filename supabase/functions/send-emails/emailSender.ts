@@ -19,54 +19,106 @@ async function generatePDF(text: string): Promise<string> {
     const page = pdfDoc.addPage([612, 792]); // Letter size
     const { width, height } = page.getSize();
     
-    // Embed the standard font
-    const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-    const fontSize = 12;
-    const lineHeight = fontSize * 1.2;
+    // Embed fonts
+    const titleFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const bodyFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
     
-    // Prepare text for wrapping
-    const words = text.split(/\s+/);
-    const margin = 50;
+    // Settings
+    const margin = 72; // 1 inch margin
+    const titleFontSize = 16;
+    const bodyFontSize = 12;
+    const lineHeight = bodyFontSize * 1.5;
+    const paragraphSpacing = bodyFontSize * 0.8; // Space between paragraphs
     const maxWidth = width - (margin * 2);
     
-    let currentLine = "";
-    let lines = [];
-    let y = height - margin;
+    // Parse the text into sections (title and paragraphs)
+    const sections = text.trim().split('\n\n');
+    let currentY = height - margin;
+    let currentPage = page;
     
-    // Text wrapping logic
-    for (const word of words) {
-      const testLine = currentLine + (currentLine ? " " : "") + word;
-      const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+    // Process each section
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i].trim();
       
-      if (textWidth > maxWidth) {
-        lines.push(currentLine);
-        currentLine = word;
+      // Skip empty sections
+      if (!section) continue;
+      
+      // Check if it's a title (all caps)
+      const isTitle = section === section.toUpperCase() && section.length < 50;
+      const font = isTitle ? titleFont : bodyFont;
+      const fontSize = isTitle ? titleFontSize : bodyFontSize;
+      
+      // For titles, make them bold and add more space
+      if (isTitle) {
+        // Check if we need a new page
+        if (currentY < margin + fontSize * 2) {
+          currentPage = pdfDoc.addPage([612, 792]);
+          currentY = height - margin;
+        }
+        
+        currentPage.drawText(section, {
+          x: margin,
+          y: currentY,
+          size: fontSize,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+        
+        currentY -= fontSize * 2; // More space after title
       } else {
-        currentLine = testLine;
+        // Regular paragraph - need to wrap text
+        const words = section.split(/\s+/);
+        let currentLine = "";
+        
+        for (const word of words) {
+          const testLine = currentLine + (currentLine ? " " : "") + word;
+          const textWidth = bodyFont.widthOfTextAtSize(testLine, bodyFontSize);
+          
+          if (textWidth > maxWidth) {
+            // Check if we need a new page
+            if (currentY < margin + bodyFontSize) {
+              currentPage = pdfDoc.addPage([612, 792]);
+              currentY = height - margin;
+            }
+            
+            // Draw the current line
+            currentPage.drawText(currentLine, {
+              x: margin,
+              y: currentY,
+              size: bodyFontSize,
+              font: bodyFont,
+              color: rgb(0, 0, 0),
+            });
+            
+            currentY -= lineHeight;
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        
+        // Don't forget the last line of the paragraph
+        if (currentLine) {
+          // Check if we need a new page
+          if (currentY < margin + bodyFontSize) {
+            currentPage = pdfDoc.addPage([612, 792]);
+            currentY = height - margin;
+          }
+          
+          currentPage.drawText(currentLine, {
+            x: margin,
+            y: currentY,
+            size: bodyFontSize,
+            font: bodyFont,
+            color: rgb(0, 0, 0),
+          });
+          
+          currentY -= lineHeight;
+        }
+        
+        // Add extra space after paragraphs
+        currentY -= paragraphSpacing;
       }
-    }
-    
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-    
-    // Draw text on the page
-    for (const line of lines) {
-      // Create a new page if needed
-      if (y < margin) {
-        const newPage = pdfDoc.addPage([612, 792]);
-        y = height - margin;
-      }
-      
-      page.drawText(line, {
-        x: margin,
-        y: y,
-        size: fontSize,
-        font: font,
-        color: rgb(0, 0, 0),
-      });
-      
-      y -= lineHeight;
     }
     
     // Serialize the PDF document to bytes
@@ -105,7 +157,7 @@ export async function sendEmailWithAttachments(email: string, formData: any, spe
     
     for (let i = 0; i < speechVersions.length; i++) {
       const speech = speechVersions[i];
-      const pdfContent = createSpeechPDFContent(speech, i + 1, formData, customerReference);
+      const pdfContent = createSpeechPDFContent(speech, i, formData, customerReference);
       const pdfBase64 = await generatePDF(pdfContent);
       
       enrichedSpeeches.push({
