@@ -42,16 +42,8 @@ export const createMainEmailHTML = (speechVersions: any[], formData: any, custom
 
 // Create text content for PDF
 export const createSpeechPDFContent = (speech: any, index: number, formData: any, customerReference: string) => {
-  const roleText = formData?.role || 'Graduate';
-  const institutionText = formData?.institution || 'Your Institution';
-  const toneText = speech?.tone || 'Standard';
-  
   return `
 GRADUATION SPEECH - VERSION ${index + 1}
-Role: ${roleText}
-Institution: ${institutionText}
-Tone: ${toneText}
-Reference: ${customerReference}
 
 ${speech.content}
 
