@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { trackButtonClick } from "@/utils/clickTracking";
+import SecurePaymentBadges from "./SecurePaymentBadges";
 
 interface PaymentCardProps {
   customerEmail: string;
@@ -227,6 +228,9 @@ const PaymentCard = ({ customerEmail, setCustomerEmail, formData, onPaymentStart
         >
           {isProcessingPayment ? "Processing..." : "Unlock Speech"}
         </Button>
+        
+        {/* Add secure payment badges */}
+        <SecurePaymentBadges />
       </Card>
     </motion.div>
   );
