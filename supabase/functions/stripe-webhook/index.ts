@@ -4,6 +4,10 @@ import { verifyStripeSignature } from "./signatureVerification.ts";
 import { initializeSupabase } from "./paymentProcessor.ts";
 import { corsHeaders, createResponse, handleCorsOptions } from "./corsUtils.ts";
 import { handleCheckoutCompleted, parseStripeEvent, initializeStripe } from "./stripeEventHandler.ts";
+import { initSentry } from "../shared/sentry.ts";
+
+// Initialize Sentry
+const sentry = initSentry("stripe-webhook");
 
 // This disables JWT verification for this function
 export const _preflightOptions = {
@@ -30,6 +34,12 @@ serve(async (req) => {
     console.log("Webhook endpoint called");
     console.log("HTTP Method:", req.method);
     
+    // Add request context to Sentry
+    sentry.setContext("request", {
+      method: req.method,
+      url: req.url,
+    });
+    
     // Get environment variables
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -53,12 +63,16 @@ serve(async (req) => {
     // Check that required environment variables are set
     if (!stripeSecretKey) {
       console.error("Missing STRIPE_SECRET_KEY");
-      return createResponse({ error: "Server configuration error: Missing Stripe key" }, 500);
+      const error = new Error("Server configuration error: Missing Stripe key");
+      sentry.captureException(error);
+      return createResponse({ error: error.message }, 500);
     }
     
     if (!supabaseUrl || !supabaseKey) {
       console.error("Missing Supabase credentials");
-      return createResponse({ error: "Server configuration error: Missing database credentials" }, 500);
+      const error = new Error("Server configuration error: Missing database credentials");
+      sentry.captureException(error);
+      return createResponse({ error: error.message }, 500);
     }
 
     // Initialize Stripe client
@@ -75,23 +89,30 @@ serve(async (req) => {
     // Special handling for test mode
     if (isTestMode) {
       console.log("Running in test mode - bypassing signature verification");
+      sentry.setTag("test_mode", "true");
+      
       body = await req.text();
       try {
         event = parseStripeEvent(body);
       } catch (parseError) {
         console.error("Failed to parse request body in test mode:", parseError);
+        sentry.captureException(parseError);
         return createResponse({ error: "Invalid JSON format in test mode" }, 400);
       }
     } else {
       // Production mode - require signature
       if (!signature) {
         console.error("Missing stripe-signature header");
-        return createResponse({ error: "Missing Stripe signature" }, 400);
+        const error = new Error("Missing Stripe signature");
+        sentry.captureException(error);
+        return createResponse({ error: error.message }, 400);
       }
       
       if (!endpointSecret) {
         console.error("Missing STRIPE_WEBHOOK_SECRET");
-        return createResponse({ error: "Server configuration error: Missing webhook secret" }, 500);
+        const error = new Error("Server configuration error: Missing webhook secret");
+        sentry.captureException(error);
+        return createResponse({ error: error.message }, 500);
       }
       
       body = await req.text();
@@ -112,12 +133,23 @@ serve(async (req) => {
           console.error("- Signature from header:", signature);
           console.error("- Secret ends with:", endpointSecret.slice(-4));
           console.error("- Payload length:", body.length);
-          return createResponse({ error: "Webhook Error: Signature verification failed" }, 400);
+          
+          const error = new Error("Webhook Error: Signature verification failed");
+          sentry.setContext("verification", {
+            signatureLength: signature.length,
+            payloadLength: body.length,
+            secretFirstChars: endpointSecret.substring(0, 3),
+            secretLastChars: endpointSecret.slice(-3)
+          });
+          sentry.captureException(error);
+          
+          return createResponse({ error: error.message }, 400);
         }
         
         console.log("Signature verification succeeded");
       } catch (verificationError) {
         console.error("Error during signature verification:", verificationError.message);
+        sentry.captureException(verificationError);
         return createResponse({ 
           error: `Webhook Error: Signature verification error: ${verificationError.message}` 
         }, 400);
@@ -127,17 +159,20 @@ serve(async (req) => {
       try {
         event = parseStripeEvent(body);
       } catch (parseError) {
+        sentry.captureException(parseError);
         return createResponse({ error: `Invalid JSON format: ${parseError.message}` }, 400);
       }
     }
     
     console.log(`Received Stripe event: ${event.type}`);
+    sentry.setTag("event_type", event.type);
 
     // Initialize Supabase client
     try {
       initializeSupabase(supabaseUrl, supabaseKey);
     } catch (initError) {
       console.error("Failed to initialize Supabase client:", initError);
+      sentry.captureException(initError);
       return createResponse({ error: `Database initialization error: ${initError.message}` }, 500);
     }
 
@@ -153,6 +188,14 @@ serve(async (req) => {
   } catch (error) {
     console.error("Critical error in stripe-webhook function:", error);
     console.error("Stack trace:", error.stack || "No stack trace available");
-    return createResponse({ error: error.message || "Webhook Error" }, 400);
+    
+    // Capture the exception in Sentry
+    const eventId = sentry.captureException(error);
+    console.log(`Error tracked in Sentry with event ID: ${eventId}`);
+    
+    return createResponse({ 
+      error: error.message || "Webhook Error",
+      sentryEventId: eventId
+    }, 400);
   }
 });

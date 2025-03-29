@@ -3,6 +3,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, createResponse } from "./utils.ts";
 import { determineCustomerReference } from "./database.ts";
 import { sendEmailWithAttachments } from "./emailSender.ts";
+import { initSentry } from "../shared/sentry.ts";
+
+// Initialize Sentry
+const sentry = initSentry("send-emails");
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,13 +18,21 @@ serve(async (req) => {
     console.log("Send-emails function called");
     console.log("Request headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     
+    // Add request context to Sentry
+    sentry.setContext("request", {
+      method: req.method,
+      url: req.url,
+    });
+    
     // Validate authentication
     const authHeader = req.headers.get("Authorization");
     const apiKey = req.headers.get("apikey");
     
     if (!authHeader && !apiKey) {
       console.error("Missing authentication headers");
-      return createResponse({ error: "Missing authorization header" }, 401);
+      const error = new Error("Missing authorization header");
+      sentry.captureException(error);
+      return createResponse({ error: error.message }, 401);
     }
     
     let reqData;
@@ -28,10 +40,20 @@ serve(async (req) => {
       reqData = await req.json();
     } catch (parseError) {
       console.error("Failed to parse request JSON:", parseError);
+      sentry.captureException(parseError);
       return createResponse({ error: "Invalid JSON in request body" }, 400);
     }
     
     const { purchaseId, email, formData, speechVersions, customerReference: providedReference } = reqData;
+    
+    // Set request data in Sentry for context
+    sentry.setContext("request_data", {
+      purchaseId,
+      email,
+      providedReference,
+      speechVersionsCount: speechVersions?.length || 0,
+      formDataExists: !!formData
+    });
     
     console.log("Received email request for:", email);
     console.log("Purchase ID:", purchaseId);
@@ -49,22 +71,29 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       console.error("RESEND_API_KEY is not set in environment variables");
-      throw new Error("Email service configuration error: Missing API key");
+      const error = new Error("Email service configuration error: Missing API key");
+      sentry.captureException(error);
+      throw error;
     } else {
       console.log("Resend API key is configured (ending with):", resendApiKey.slice(-4));
     }
     
     if (!email) {
-      throw new Error("Email address is required");
+      const error = new Error("Email address is required");
+      sentry.captureException(error);
+      throw error;
     }
     
     if (!speechVersions || !Array.isArray(speechVersions) || speechVersions.length === 0) {
-      throw new Error("Speech versions are required");
+      const error = new Error("Speech versions are required");
+      sentry.captureException(error);
+      throw error;
     }
     
     // Determine the customer reference
     const customerReference = await determineCustomerReference(purchaseId, providedReference);
     console.log("Using customer reference for emails:", customerReference);
+    sentry.setTag("customer_reference", customerReference);
     
     // Send a single email with all speeches as PDF attachments
     console.log("Calling sendEmailWithAttachments function...");
@@ -78,11 +107,16 @@ serve(async (req) => {
       emailResult
     });
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in send-emails function:", error);
     
+    // Capture the exception in Sentry
+    const eventId = sentry.captureException(error);
+    console.log(`Error tracked in Sentry with event ID: ${eventId}`);
+    
     return createResponse({ 
-      error: error.message || "Failed to send emails" 
+      error: error.message || "Failed to send emails",
+      sentryEventId: eventId
     }, 500);
   }
 });

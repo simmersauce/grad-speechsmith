@@ -1,6 +1,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { initSentry } from "../shared/sentry.ts";
+
+// Initialize Sentry
+const sentry = initSentry("process-payment");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,15 +33,24 @@ serve(async (req) => {
     console.log("Process payment function called");
     console.log("Request headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     
+    // Add request context to Sentry
+    sentry.setContext("request", {
+      method: req.method,
+      url: req.url,
+    });
+    
     // Check for test mode
     const testModeHeader = req.headers.get("x-test-mode");
     const isTestMode = testModeHeader === "true";
     
     if (isTestMode) {
       console.log("Running in test mode - bypassing Stripe API call");
+      sentry.setTag("test_mode", "true");
+      
       // Get request data
       const requestData = await req.json().catch(error => {
         console.error("Error parsing request JSON:", error);
+        sentry.captureException(error);
         throw new Error("Invalid request format");
       });
       
@@ -69,17 +82,22 @@ serve(async (req) => {
     // Check that required environment variables are set
     if (!stripeSecretKey) {
       console.error("Missing STRIPE_SECRET_KEY");
-      throw new Error("Server configuration error: Missing Stripe key");
+      const error = new Error("Server configuration error: Missing Stripe key");
+      sentry.captureException(error);
+      throw error;
     }
     
     if (!supabaseUrl || !supabaseKey) {
       console.error("Missing Supabase credentials");
-      throw new Error("Server configuration error: Missing database credentials");
+      const error = new Error("Server configuration error: Missing database credentials");
+      sentry.captureException(error);
+      throw error;
     }
 
     // Get request data
     const requestData = await req.json().catch(error => {
       console.error("Error parsing request JSON:", error);
+      sentry.captureException(error);
       throw new Error("Invalid request format");
     });
     
@@ -94,15 +112,20 @@ serve(async (req) => {
     // Validate request data
     if (!formData) {
       console.error("Missing form data");
-      throw new Error("Missing form data");
+      const error = new Error("Missing form data");
+      sentry.captureException(error);
+      throw error;
     }
 
     if (!finalEmail) {
       console.error("Missing customer email - not found in either 'customerEmail' or 'email' field");
-      throw new Error("Missing customer email");
+      const error = new Error("Missing customer email");
+      sentry.captureException(error);
+      throw error;
     }
 
     console.log("Storing form data for:", finalEmail);
+    sentry.setTag("user_email", finalEmail);
 
     // Store the form data in Supabase first
     const { data: storedData, error: storeError } = await supabase
@@ -115,16 +138,24 @@ serve(async (req) => {
 
     if (storeError) {
       console.error("Error storing form data:", storeError);
+      sentry.setContext("database_error", {
+        operation: "insert_pending_form_data",
+        error: storeError
+      });
+      sentry.captureException(storeError);
       throw new Error(`Failed to store form data: ${storeError.message}`);
     }
 
     if (!storedData || storedData.length === 0) {
       console.error("No data returned after storing form data");
-      throw new Error("No data returned after storing form data");
+      const error = new Error("No data returned after storing form data");
+      sentry.captureException(error);
+      throw error;
     }
 
     const formDataId = storedData[0].id;
     console.log("Form data stored with ID:", formDataId);
+    sentry.setTag("form_data_id", formDataId.toString());
 
     // Create a payment session with Stripe using direct API call
     try {
@@ -156,15 +187,26 @@ serve(async (req) => {
       if (!stripeResponse.ok) {
         const errorData = await stripeResponse.json();
         console.error("Stripe API error:", errorData);
-        throw new Error(`Stripe API error: ${errorData.error?.message || 'Unknown error'}`);
+        
+        sentry.setContext("stripe_error", {
+          status: stripeResponse.status,
+          error: errorData
+        });
+        const stripeError = new Error(`Stripe API error: ${errorData.error?.message || 'Unknown error'}`);
+        sentry.captureException(stripeError);
+        
+        throw stripeError;
       }
 
       const session = await stripeResponse.json();
       console.log("Stripe session created successfully:", session.id);
       console.log("Checkout URL:", session.url);
+      sentry.setTag("stripe_session_id", session.id);
 
       if (!session.url) {
-        throw new Error("Stripe session created but no redirect URL was provided");
+        const error = new Error("Stripe session created but no redirect URL was provided");
+        sentry.captureException(error);
+        throw error;
       }
 
       // Return the session ID and URL for the client to use
@@ -180,15 +222,21 @@ serve(async (req) => {
       );
     } catch (stripeError) {
       console.error("Stripe error:", stripeError);
+      sentry.captureException(stripeError);
       throw new Error(`Stripe error: ${stripeError.message || 'Unknown error'}`);
     }
   } catch (error) {
     console.error("Error in process-payment function:", error);
     
+    // Capture the exception in Sentry
+    const eventId = sentry.captureException(error);
+    console.log(`Error tracked in Sentry with event ID: ${eventId}`);
+    
     // Return a properly formatted error response
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Failed to process payment" 
+        error: error.message || "Failed to process payment",
+        sentryEventId: eventId
       }),
       { 
         status: 500, 

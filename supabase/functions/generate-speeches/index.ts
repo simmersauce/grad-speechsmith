@@ -5,6 +5,10 @@ import { supabase, saveSpeechVersion, updatePurchaseStatus } from "./database.ts
 import { generateSpeechWithOpenAI } from "./openai.ts";
 import { sendEmailNotification } from "./emailNotifier.ts";
 import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
+import { initSentry } from "../shared/sentry.ts";
+
+// Initialize Sentry
+const sentry = initSentry("generate-speeches");
 
 // Initialize Supabase URL for function calls
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -27,12 +31,14 @@ serve(async (req) => {
     // Only log a warning instead of returning an error for missing authentication
     if (!authHeader && !apiKey) {
       console.log("Warning: No authentication headers provided. Proceeding for testing purposes.");
+      sentry.setTag("auth_missing", "true");
     }
     
     // Check OpenAI API key is available
     const openAiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openAiKey) {
       console.error("Missing OPENAI_API_KEY");
+      sentry.captureException(new Error("Server configuration error: Missing OpenAI API key"));
       return createResponse({ error: "Server configuration error: Missing OpenAI API key" }, 500);
     }
 
@@ -41,15 +47,26 @@ serve(async (req) => {
       reqData = await req.json();
     } catch (parseError) {
       console.error("Failed to parse request JSON:", parseError);
+      sentry.captureException(parseError);
       return createResponse({ error: "Invalid JSON in request body" }, 400);
     }
     
     const { formData, purchaseId, email, customerReference } = reqData;
     
+    // Set request context in Sentry
+    sentry.setContext("request_data", {
+      hasPurchaseId: !!purchaseId,
+      hasEmail: !!email,
+      hasCustomerReference: !!customerReference,
+      formDataFields: formData ? Object.keys(formData) : []
+    });
+    
     // Validate required fields
     if (!formData) {
       console.error("Missing form data in request");
-      return createResponse({ error: "Missing form data in request" }, 400);
+      const error = new Error("Missing form data in request");
+      sentry.captureException(error);
+      return createResponse({ error: error.message }, 400);
     }
     
     // Generate a valid UUID for testing
@@ -60,6 +77,11 @@ serve(async (req) => {
     console.log("Generating speeches for purchase:", finalPurchaseId);
     console.log("Using customer reference:", customerReference || "No reference provided");
     console.log("Using form data:", JSON.stringify(formData, null, 2));
+    
+    sentry.setTag("purchase_id", finalPurchaseId);
+    if (customerReference) {
+      sentry.setTag("customer_reference", customerReference);
+    }
     
     // Generate 3 different speeches with the same tone
     const speechVersions = [];
@@ -90,12 +112,19 @@ serve(async (req) => {
         console.log(`Successfully generated and saved speech version ${versionNumber}`);
       } catch (versionError) {
         console.error(`Error generating speech version ${versionNumber}:`, versionError);
+        sentry.setContext("version_error", {
+          versionNumber,
+          errorMessage: versionError.message,
+        });
+        sentry.captureException(versionError);
         // Continue with other versions
       }
     }
     
     if (speechVersions.length === 0) {
-      throw new Error("Failed to generate any speech versions");
+      const error = new Error("Failed to generate any speech versions");
+      sentry.captureException(error);
+      throw error;
     }
 
     // Update purchase record to mark speeches as generated
@@ -103,6 +132,7 @@ serve(async (req) => {
       await updatePurchaseStatus(finalPurchaseId, { speeches_generated: true });
     } catch (updateError) {
       console.error("Error updating purchase status:", updateError);
+      sentry.captureException(updateError);
       // Continue execution even if update fails
     }
 
@@ -121,6 +151,7 @@ serve(async (req) => {
         );
       } catch (emailError) {
         console.error("Error sending email notification:", emailError);
+        sentry.captureException(emailError);
         // Continue execution even if email sending fails
       }
     } else {
@@ -133,8 +164,14 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error in generate-speeches function:", error);
+    
+    // Capture the error in Sentry
+    const eventId = sentry.captureException(error);
+    console.log(`Error tracked in Sentry with event ID: ${eventId}`);
+    
     return createResponse({ 
-      error: error.message || "Failed to generate speeches" 
+      error: error.message || "Failed to generate speeches",
+      sentryEventId: eventId
     }, 500);
   }
 });

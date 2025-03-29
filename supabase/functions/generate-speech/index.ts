@@ -1,10 +1,14 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { initSentry } from "../shared/sentry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Initialize Sentry
+const sentry = initSentry("generate-speech");
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -31,6 +35,16 @@ serve(async (req) => {
 
     console.log("Sending request to OpenAI with prompt:", prompt);
 
+    // Set additional context for better debugging
+    sentry.setContext("request", {
+      functionName: "generate-speech",
+      hasFormData: !!formData,
+    });
+    
+    if (formData?.name) {
+      sentry.setTag("user_name", formData.name);
+    }
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -52,7 +66,17 @@ serve(async (req) => {
     if (!response.ok) {
       const errorData = await response.text();
       console.error("OpenAI API error:", errorData);
-      throw new Error(`Failed to generate speech: ${errorData}`);
+      
+      // Capture API error in Sentry
+      const error = new Error(`OpenAI API Error: ${errorData}`);
+      sentry.setContext("api_response", {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+      });
+      sentry.captureException(error);
+      
+      throw error;
     }
 
     const responseData = await response.json();
@@ -71,9 +95,14 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in generate-speech function:", error);
     
+    // Capture the exception in Sentry
+    const eventId = sentry.captureException(error);
+    console.log(`Error tracked in Sentry with event ID: ${eventId}`);
+    
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Failed to generate speech" 
+        error: error.message || "Failed to generate speech",
+        sentryEventId: eventId
       }),
       { 
         status: 500, 
