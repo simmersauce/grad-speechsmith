@@ -1,11 +1,9 @@
+
 // Test mode flag - set to false to disable test mode
 export const TEST_MODE = true;
 
 // Local storage key for test mode
 export const TEST_MODE_STORAGE_KEY = 'graduation_speech_test_mode';
-
-// Import Supabase client
-import { supabase } from "@/integrations/supabase/client";
 
 // Get test mode from local storage if available
 export const getTestModeState = (): boolean => {
@@ -16,38 +14,6 @@ export const getTestModeState = (): boolean => {
 // Set test mode in local storage
 export const setTestModeState = (enabled: boolean): void => {
   localStorage.setItem(TEST_MODE_STORAGE_KEY, JSON.stringify(enabled));
-};
-
-// Sentry test function
-export const testSentryError = async (message: string = "Test error triggered manually"): Promise<{ success: boolean, eventId?: string, error?: string }> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('generate-speech', {
-      body: { 
-        testSentry: true,
-        errorMessage: message
-      }
-    });
-    
-    if (error) {
-      return { 
-        success: true, 
-        eventId: error.message.includes('sentryEventId') 
-          ? error.message.split('sentryEventId:')[1]?.trim() 
-          : undefined,
-        error: error.message
-      };
-    }
-    
-    return { success: false, error: 'No error was triggered' };
-  } catch (err: any) {
-    return { 
-      success: true, 
-      error: err.message,
-      eventId: err.message.includes('sentryEventId') 
-        ? err.message.split('sentryEventId:')[1]?.trim() 
-        : undefined
-    };
-  }
 };
 
 // Dummy form data for testing
