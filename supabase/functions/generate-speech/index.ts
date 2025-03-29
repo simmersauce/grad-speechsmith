@@ -27,7 +27,39 @@ serve(async (req) => {
   }
 
   try {
-    const { formData } = await req.json();
+    const requestData = await req.json();
+    
+    // Check if this is a Sentry test request
+    if (requestData.testSentry === true) {
+      console.log("Test Sentry error requested by user");
+      const errorMessage = requestData.errorMessage || "Manual test error triggered by user";
+      
+      // Create custom error for Sentry tracking
+      const error = new Error(errorMessage);
+      
+      // Add custom context for the test error
+      Sentry.setContext("test_error", {
+        manually_triggered: true,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Capture the error in Sentry
+      const eventId = Sentry.captureException(error);
+      
+      // Return error response with Sentry event ID
+      return new Response(
+        JSON.stringify({ 
+          error: `Test error sent to Sentry. Error message: ${errorMessage}`,
+          sentryEventId: eventId
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const { formData } = requestData;
     
     // Use formData to construct the prompt
     const prompt = `Generate an inspiring graduation speech for ${formData.name} who is graduating from ${
