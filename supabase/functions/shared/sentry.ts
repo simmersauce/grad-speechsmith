@@ -14,14 +14,13 @@ export function initSentry(functionName: string): any {
   try {
     Sentry.init({
       dsn,
-      debug: false,
       environment: Deno.env.get("ENVIRONMENT") || "production",
       release: "1.0.0", // You can dynamically set this based on your versioning
       tracesSampleRate: 1.0,
-      integrations: [],
-      defaultIntegrations: {
-        console: false // Disable console as a default integration
-      },
+      // integrations: [],
+      // defaultIntegrations: {
+      //   console: false // Disable console as a default integration
+      // },
       beforeSend(event: any) {
         // Add the function name to all events
         event.tags = event.tags || {};
