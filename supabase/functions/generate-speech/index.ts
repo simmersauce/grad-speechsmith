@@ -10,6 +10,11 @@ const corsHeaders = {
 // Initialize Sentry
 const Sentry = initSentry("generate-speech");
 
+// Test Sentry with an uncaught error after 500ms
+setTimeout(() => {
+  throw new Error("Uncaught test error from generate-speech function");
+}, 500);
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
