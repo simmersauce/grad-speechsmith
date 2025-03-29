@@ -10,17 +10,15 @@ const corsHeaders = {
 // Initialize Sentry
 const Sentry = initSentry("generate-speech");
 
-// Add a test error to verify Sentry is working (will be removed in production)
-setTimeout(() => {
+serve(async (req) => {
+  // Test Sentry at the beginning of each request
   try {
     throw new Error("Test Sentry error from generate-speech function");
   } catch (error) {
     Sentry.captureException(error);
     console.log("Test error sent to Sentry");
   }
-}, 1000);
-
-serve(async (req) => {
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
