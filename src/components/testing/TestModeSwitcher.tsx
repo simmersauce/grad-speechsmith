@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Beaker, ZapIcon } from "lucide-react";
-import { getTestModeState, setTestModeState } from "@/utils/testMode";
+import { getTestModeState, setTestModeState, TEST_MODE } from "@/utils/testMode";
 
 interface TestModeSwitcherProps {
   onSubmitForm?: () => void;
@@ -26,6 +26,11 @@ const TestModeSwitcher = ({ onSubmitForm }: TestModeSwitcherProps) => {
     // Force reload to apply test mode changes
     window.location.reload();
   };
+
+  // Only render the component if TEST_MODE is true (enabled in the utils file)
+  if (!TEST_MODE) {
+    return null;
+  }
 
   return (
     <Card className="fixed bottom-4 right-4 p-4 z-50 bg-amber-50 border-amber-200 shadow-md w-auto flex flex-col space-y-3">
