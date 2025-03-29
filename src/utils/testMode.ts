@@ -1,6 +1,6 @@
 
 // Test mode flag - set to false to disable test mode
-export const TEST_MODE = false;
+export const TEST_MODE = true;
 
 // Local storage key for test mode
 export const TEST_MODE_STORAGE_KEY = 'graduation_speech_test_mode';
