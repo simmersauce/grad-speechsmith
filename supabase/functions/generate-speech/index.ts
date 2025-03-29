@@ -12,7 +12,7 @@ const Sentry = initSentry("generate-speech");
 
 // Test Sentry with an uncaught error after 500ms
 //setTimeout(() => {
-throw new Error("Uncaught test error from generate-speech function");
+//throw new Error("Uncaught test error from generate-speech function");
 //}, 500);
 
 serve(async (req) => {
@@ -21,6 +21,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  try {
+    throw new Error("Uncaught test error from generate-speech function");
+  } catch(err) {
+    Sentry.captureException(err);
+    console.error("An error happened:", err);
+  }
+  
   try {
     const { formData } = await req.json();
     
