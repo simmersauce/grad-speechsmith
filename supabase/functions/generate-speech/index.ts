@@ -8,7 +8,17 @@ const corsHeaders = {
 };
 
 // Initialize Sentry
-const sentry = initSentry("generate-speech");
+const Sentry = initSentry("generate-speech");
+
+// Add a test error to verify Sentry is working (will be removed in production)
+setTimeout(() => {
+  try {
+    throw new Error("Test Sentry error from generate-speech function");
+  } catch (error) {
+    Sentry.captureException(error);
+    console.log("Test error sent to Sentry");
+  }
+}, 1000);
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -36,13 +46,13 @@ serve(async (req) => {
     console.log("Sending request to OpenAI with prompt:", prompt);
 
     // Set additional context for better debugging
-    sentry.setContext("request", {
+    Sentry.setContext("request", {
       functionName: "generate-speech",
       hasFormData: !!formData,
     });
     
     if (formData?.name) {
-      sentry.setTag("user_name", formData.name);
+      Sentry.setTag("user_name", formData.name);
     }
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -69,12 +79,12 @@ serve(async (req) => {
       
       // Capture API error in Sentry
       const error = new Error(`OpenAI API Error: ${errorData}`);
-      sentry.setContext("api_response", {
+      Sentry.setContext("api_response", {
         status: response.status,
         statusText: response.statusText,
         errorData,
       });
-      sentry.captureException(error);
+      Sentry.captureException(error);
       
       throw error;
     }
@@ -96,7 +106,7 @@ serve(async (req) => {
     console.error("Error in generate-speech function:", error);
     
     // Capture the exception in Sentry
-    const eventId = sentry.captureException(error);
+    const eventId = Sentry.captureException(error);
     console.log(`Error tracked in Sentry with event ID: ${eventId}`);
     
     return new Response(
