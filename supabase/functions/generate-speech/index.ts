@@ -21,12 +21,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    throw new Error("Uncaught test error from generate-speech function");
-  } catch(err) {
-    Sentry.captureException(err);
-    console.error("An error happened:", err);
-  }
+  // try {
+  //   throw new Error("Uncaught test error from generate-speech function");
+  // } catch(err) {
+  //   Sentry.captureException(err);
+  //   console.error("An error happened:", err);
+  // }
   
   try {
     const { formData } = await req.json();
