@@ -1,4 +1,3 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -11,11 +10,15 @@ import PaymentSuccessSimulator from "@/components/payment/PaymentSuccessSimulato
 import TestingDashboard from "@/components/testing/TestingDashboard";
 import { trackButtonClick } from "@/utils/clickTracking";
 import { v4 as uuidv4 } from "uuid";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Review = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [formData, setFormData] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (TEST_MODE) {
@@ -35,22 +38,69 @@ const Review = () => {
     }
   }, [location.state, navigate]);
 
-  const handleGenerateSpeech = () => {
+  const storeFormDataInDatabase = async (formData, previewId) => {
+    try {
+      const customerEmail = formData.email || "";
+      
+      const { error } = await supabase
+        .from('pending_form_data')
+        .insert({
+          id: previewId,
+          form_data: formData,
+          customer_email: customerEmail,
+          processed: false
+        });
+      
+      if (error) {
+        console.error("Error storing form data in database:", error);
+        throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Failed to store form data in database:", error);
+      return false;
+    }
+  };
+
+  const handleGenerateSpeech = async () => {
+    if (!formData) return;
+    
     trackButtonClick('generate_speech_button', { from: 'review_page' });
+    setIsGenerating(true);
     
-    // Generate a unique ID for the preview URL
-    const previewId = uuidv4().substring(0, 8);
-    
-    // Store form data in sessionStorage with the preview ID
-    if (formData) {
+    try {
+      const previewId = uuidv4().substring(0, 8);
+      
+      const success = await storeFormDataInDatabase(formData, previewId);
+      
+      if (!success && !TEST_MODE) {
+        toast({
+          title: "Error",
+          description: "Failed to save your speech data. Please try again.",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+      
       const previewData = {
         formData,
         timestamp: new Date().toISOString()
       };
       sessionStorage.setItem(`preview_${previewId}`, JSON.stringify(previewData));
+      
+      navigate(`/preview/${previewId}`, { state: { formData } });
+    } catch (error) {
+      console.error("Error generating speech:", error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
     }
-    
-    navigate(`/preview/${previewId}`, { state: { formData } });
   };
 
   const handleEditInformation = () => {
@@ -68,7 +118,7 @@ const Review = () => {
     {title: "Final Touches",fields: ["acknowledgements", "quote", "wishes", "additionalInfo"]}
   ];
 
-  const formatFieldName = (field: string) => {
+  const formatFieldName = (field) => {
     return field
       .replace(/([A-Z])/g, " $1")
       .replace(/^./, (str) => str.toUpperCase());
@@ -119,9 +169,10 @@ const Review = () => {
               </Button>
               <Button
                 onClick={handleGenerateSpeech}
+                disabled={isGenerating}
                 className="flex items-center justify-center w-full sm:w-auto bg-primary hover:bg-primary/90"
               >
-                Generate Speech
+                {isGenerating ? "Generating..." : "Generate Speech"}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>

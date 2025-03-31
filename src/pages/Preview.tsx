@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -30,14 +29,44 @@ const Preview = () => {
   const [sharableLink, setSharableLink] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadFormData = () => {
+    const loadFormData = async () => {
       // Check if preview ID is in the URL
       if (params.previewId) {
         const previewId = params.previewId;
-        const storedPreviewData = sessionStorage.getItem(`preview_${previewId}`);
         
-        if (storedPreviewData) {
-          try {
+        try {
+          // First try to fetch form data from the database
+          const { data, error } = await supabase
+            .from('pending_form_data')
+            .select('*')
+            .eq('id', previewId)
+            .maybeSingle();
+          
+          if (error) {
+            console.error("Error fetching from database:", error);
+            throw error;
+          }
+          
+          if (data) {
+            // We found data in the database
+            setFormData(data.form_data);
+            
+            // Use email from form data if available
+            if (data.customer_email) {
+              setCustomerEmail(data.customer_email);
+            } else if (data.form_data.email) {
+              setCustomerEmail(data.form_data.email);
+            }
+            
+            // Set sharable link
+            setSharableLink(`${window.location.origin}/preview/${previewId}`);
+            
+            return data.form_data;
+          }
+          
+          // If not found in database, try session storage as fallback
+          const storedPreviewData = sessionStorage.getItem(`preview_${previewId}`);
+          if (storedPreviewData) {
             const parsedData = JSON.parse(storedPreviewData);
             setFormData(parsedData.formData);
             
@@ -50,9 +79,9 @@ const Preview = () => {
             setSharableLink(`${window.location.origin}/preview/${previewId}`);
             
             return parsedData.formData;
-          } catch (e) {
-            console.error("Error parsing stored preview data:", e);
           }
+        } catch (e) {
+          console.error("Error loading form data:", e);
         }
       }
       
@@ -74,50 +103,54 @@ const Preview = () => {
       return null;
     };
 
-    const data = loadFormData();
-    if (!data) return;
-
-    const generateSpeech = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // If in test mode, use dummy speech after a slight delay to simulate API call
-        if (TEST_MODE) {
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          setSpeech(dummyGeneratedSpeech);
+    const initializePreview = async () => {
+      const data = await loadFormData();
+      if (!data) return;
+  
+      const generateSpeech = async () => {
+        try {
+          setIsLoading(true);
+          setError(null);
+          
+          // If in test mode, use dummy speech after a slight delay to simulate API call
+          if (TEST_MODE) {
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            setSpeech(dummyGeneratedSpeech);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Call the Supabase Edge Function
+          const { data: responseData, error } = await supabase.functions.invoke('generate-speech', {
+            body: { formData: data }
+          });
+  
+          if (error) {
+            console.error("Edge function error:", error);
+            throw new Error(error.message || 'Failed to generate speech');
+          }
+  
+          setSpeech(responseData.speech);
+        } catch (error: any) {
+          console.error("Error generating speech:", error);
+          setError(error.message || "An unknown error occurred");
+          toast({
+            title: "Error",
+            description: "Failed to generate speech. Please try again.",
+            variant: "destructive",
+          });
+          // Set a placeholder message when generation fails
+          setSpeech("We couldn't generate your speech at this time. Please try again later.");
+        } finally {
           setIsLoading(false);
-          return;
         }
-        
-        // Call the Supabase Edge Function
-        const { data: responseData, error } = await supabase.functions.invoke('generate-speech', {
-          body: { formData: data }
-        });
-
-        if (error) {
-          console.error("Edge function error:", error);
-          throw new Error(error.message || 'Failed to generate speech');
-        }
-
-        setSpeech(responseData.speech);
-      } catch (error: any) {
-        console.error("Error generating speech:", error);
-        setError(error.message || "An unknown error occurred");
-        toast({
-          title: "Error",
-          description: "Failed to generate speech. Please try again.",
-          variant: "destructive",
-        });
-        // Set a placeholder message when generation fails
-        setSpeech("We couldn't generate your speech at this time. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
+      };
+  
+      generateSpeech();
     };
 
-    generateSpeech();
+    initializePreview();
   }, [navigate, toast, location.state, params.previewId]);
 
   const handleCopyLink = () => {
