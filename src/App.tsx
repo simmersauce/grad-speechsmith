@@ -20,6 +20,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/create" element={<CreateSpeech />} />
           <Route path="/preview" element={<Preview />} />
+          <Route path="/preview/:previewId" element={<Preview />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/review" element={<Review />} />
           <Route path="/edge-function-tester" element={<EdgeFunctionTester />} />

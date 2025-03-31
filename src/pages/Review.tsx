@@ -10,6 +10,7 @@ import EmailTestTool from "@/components/payment/EmailTestTool";
 import PaymentSuccessSimulator from "@/components/payment/PaymentSuccessSimulator";
 import TestingDashboard from "@/components/testing/TestingDashboard";
 import { trackButtonClick } from "@/utils/clickTracking";
+import { v4 as uuidv4 } from "uuid";
 
 const Review = () => {
   const location = useLocation();
@@ -19,13 +20,11 @@ const Review = () => {
   useEffect(() => {
     if (TEST_MODE) {
       setFormData(dummyFormData);
-      sessionStorage.setItem('speechFormData', JSON.stringify(dummyFormData));
       return;
     }
     
     if (location.state?.formData) {
       setFormData(location.state.formData);
-      sessionStorage.setItem('speechFormData', JSON.stringify(location.state.formData));
     } else {
       const storedData = sessionStorage.getItem('speechFormData');
       if (storedData) {
@@ -38,7 +37,20 @@ const Review = () => {
 
   const handleGenerateSpeech = () => {
     trackButtonClick('generate_speech_button', { from: 'review_page' });
-    navigate("/preview", { state: { formData } });
+    
+    // Generate a unique ID for the preview URL
+    const previewId = uuidv4().substring(0, 8);
+    
+    // Store form data in sessionStorage with the preview ID
+    if (formData) {
+      const previewData = {
+        formData,
+        timestamp: new Date().toISOString()
+      };
+      sessionStorage.setItem(`preview_${previewId}`, JSON.stringify(previewData));
+    }
+    
+    navigate(`/preview/${previewId}`, { state: { formData } });
   };
 
   const handleEditInformation = () => {

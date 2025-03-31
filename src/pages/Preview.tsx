@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +10,8 @@ import SpeechPreview from "@/components/speech/SpeechPreview";
 import PaymentCard from "@/components/payment/PaymentCard";
 import TestimonialSection from "@/components/testimonials/TestimonialSection";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Preview character limit constant
 const PREVIEW_CHAR_LIMIT = 400;
@@ -18,6 +19,7 @@ const PREVIEW_CHAR_LIMIT = 400;
 const Preview = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams();
   const { toast } = useToast();
   const [speech, setSpeech] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -25,32 +27,55 @@ const Preview = () => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sharableLink, setSharableLink] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get formData from location state or sessionStorage
-    let data;
-    if (location.state?.formData) {
-      data = location.state.formData;
-      // Store in sessionStorage for persistence
-      sessionStorage.setItem('speechFormData', JSON.stringify(data));
-    } else {
-      // Try to retrieve from sessionStorage
-      const storedData = sessionStorage.getItem('speechFormData');
-      if (storedData) {
-        data = JSON.parse(storedData);
+    const loadFormData = () => {
+      // Check if preview ID is in the URL
+      if (params.previewId) {
+        const previewId = params.previewId;
+        const storedPreviewData = sessionStorage.getItem(`preview_${previewId}`);
+        
+        if (storedPreviewData) {
+          try {
+            const parsedData = JSON.parse(storedPreviewData);
+            setFormData(parsedData.formData);
+            
+            // Use email from form data if available
+            if (parsedData.formData.email) {
+              setCustomerEmail(parsedData.formData.email);
+            }
+            
+            // Set sharable link
+            setSharableLink(`${window.location.origin}/preview/${previewId}`);
+            
+            return parsedData.formData;
+          } catch (e) {
+            console.error("Error parsing stored preview data:", e);
+          }
+        }
       }
-    }
-
-    if (!data) {
+      
+      // Try to get form data from location state
+      if (location.state?.formData) {
+        const stateData = location.state.formData;
+        setFormData(stateData);
+        
+        // Use email from form data if available
+        if (stateData.email) {
+          setCustomerEmail(stateData.email);
+        }
+        
+        return stateData;
+      }
+      
+      // If we reach here, no data was found
       navigate("/create");
-      return;
-    }
+      return null;
+    };
 
-    setFormData(data);
-    // Use email from form data if available
-    if (data.email) {
-      setCustomerEmail(data.email);
-    }
+    const data = loadFormData();
+    if (!data) return;
 
     const generateSpeech = async () => {
       try {
@@ -93,7 +118,17 @@ const Preview = () => {
     };
 
     generateSpeech();
-  }, [navigate, toast, location.state]);
+  }, [navigate, toast, location.state, params.previewId]);
+
+  const handleCopyLink = () => {
+    if (sharableLink) {
+      navigator.clipboard.writeText(sharableLink);
+      toast({
+        title: "Link Copied",
+        description: "You can share this link to return to your speech later",
+      });
+    }
+  };
 
   if (!formData) return null;
 
@@ -118,6 +153,28 @@ const Preview = () => {
                 {error}
               </AlertDescription>
             </Alert>
+          )}
+
+          {sharableLink && (
+            <div className="mb-6">
+              <Card className="p-4 bg-primary/10">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Save this link to return later:</h3>
+                    <p className="text-xs text-muted-foreground truncate max-w-[250px] sm:max-w-[400px]">{sharableLink}</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleCopyLink} 
+                    className="flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Copy Link
+                  </Button>
+                </div>
+              </Card>
+            </div>
           )}
 
           <Card className="p-4 sm:p-8 mb-6">
