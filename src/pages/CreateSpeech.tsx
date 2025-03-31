@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -73,19 +72,6 @@ const CreateSpeech = () => {
       if (location.state.formId) {
         setFormId(location.state.formId);
       }
-    } else {
-      const storedData = sessionStorage.getItem('speechFormData');
-      if (storedData) {
-        try {
-          const parsedData = JSON.parse(storedData);
-          savedData = parsedData.formData;
-          if (parsedData.formId) {
-            setFormId(parsedData.formId);
-          }
-        } catch (error) {
-          console.error("Error parsing stored form data:", error);
-        }
-      }
     }
     
     if (savedData) {
@@ -111,11 +97,6 @@ const CreateSpeech = () => {
           title: "Success",
           description: "Test mode: Your speech information has been saved!",
         });
-        
-        sessionStorage.setItem('speechFormData', JSON.stringify({
-          formData: values,
-          formId: "test-id-123"
-        }));
         
         navigate("/review", { 
           state: { 
@@ -181,11 +162,6 @@ const CreateSpeech = () => {
         description: "Your speech information has been saved!",
       });
       
-      sessionStorage.setItem('speechFormData', JSON.stringify({
-        formData: values,
-        formId: formId || newFormId
-      }));
-      
       console.log("Form submitted and saved to Supabase:", values);
       navigate("/review", { 
         state: { 
@@ -215,7 +191,6 @@ const CreateSpeech = () => {
       const values = form.getValues();
       setUserInputs((prev) => ({ ...prev, ...values }));
       
-      // In test mode, always proceed to the next tab without validation
       if (isTestMode) {
         setActiveTab((currentTabNumber + 1).toString());
         return;
@@ -311,7 +286,6 @@ const CreateSpeech = () => {
         </form>
       </Form>
       
-      {/* Test Mode Switcher */}
       <TestModeSwitcher onSubmitForm={handleFinalSubmit} />
     </div>
   );
