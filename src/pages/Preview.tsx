@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -23,7 +22,7 @@ const Preview = () => {
   const { toast } = useToast();
   const [speech, setSpeech] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [formData, setFormData] = useState(null);
+  const [formData, setFormData] = useState<any>(null);
   const [customerEmail, setCustomerEmail] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +41,7 @@ const Preview = () => {
             setFormData(parsedData.formData);
             
             // Use email from form data if available
-            if (parsedData.formData.email) {
+            if (parsedData.formData && typeof parsedData.formData === 'object' && parsedData.formData.email) {
               setCustomerEmail(parsedData.formData.email);
             }
             
@@ -62,7 +61,7 @@ const Preview = () => {
         setFormData(stateData);
         
         // Use email from form data if available
-        if (stateData.email) {
+        if (stateData && typeof stateData === 'object' && stateData.email) {
           setCustomerEmail(stateData.email);
         }
         
@@ -186,7 +185,6 @@ const Preview = () => {
             />
           </Card>
 
-          {/* Show payment card and testimonials when speech is loaded */}
           {!isLoading || isRedirecting ? (
             <>
               <PaymentCard 
@@ -198,7 +196,6 @@ const Preview = () => {
               <TestimonialSection />
             </>
           ) : (
-            // Show testimonials while loading
             <TestimonialSection />
           )}
         </motion.div>

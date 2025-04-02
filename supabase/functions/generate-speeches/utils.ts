@@ -29,7 +29,7 @@ export const generateSpeechPrompt = (formData: any, tone: string, versionNumber:
     Include this information if provided: ${formData.additionalInfo || ""}.
     Also include these wishes: ${formData.wishes || "not specified"}.
     For version ${versionNumber}, create a unique iteration with different wording and structure, but maintain the SAME TONE and SAME LENGTH as the other versions. 
-    Using this information, craft a speech that's up to 750 words.Ensure the speech reflects ${formData.name} personal journey and inspiring the graduating class to embrace future challenges with optimism and strength. 
+    Using this information, craft a speech that's up to 750 words. Ensure the speech reflects ${formData.name} personal journey and inspiring the graduating class to embrace future challenges with optimism and strength. 
     The speech should be culmination of an academic journey making the class feel included and connected. 
     Make sure the speech has a natural presenting flow, with smooth transitions between paragraphs for a unified flow.
     The speech should maintain a consistent ${tone} tone throughout and include all provided information.

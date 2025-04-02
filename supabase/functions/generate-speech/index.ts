@@ -31,7 +31,7 @@ serve(async (req) => {
   try {
     const { formData } = await req.json();
     
-    // Use formData to construct the prompt
+    // Use formData to construct the prompt with full tone description
     const prompt = `Generate an inspiring graduation speech for ${formData.name} who is graduating from ${
       formData.institution
     } (${formData.graduationType}). Include their role: ${

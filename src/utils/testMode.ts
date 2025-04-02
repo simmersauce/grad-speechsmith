@@ -1,3 +1,4 @@
+
 // Test mode flag - set to false to disable test mode
 export const TEST_MODE = false;
 
@@ -24,7 +25,7 @@ export const dummyFormData = {
   graduationClass: "Class of 2024",
   graduationType: "college",
   graduationTypeOther: "",
-  tone: "inspirational",
+  tone: "Uplifting & inspirational",
   memories: "Our freshman orientation when we all got lost on campus and ended up forming a study group that lasted all four years.",
   acknowledgements: "I'd like to thank my parents, Professor Williams who pushed me to excel, and my roommates who supported me through late-night study sessions.",
   additionalInfo: "Our class faced unprecedented challenges with the pandemic halfway through our studies.",

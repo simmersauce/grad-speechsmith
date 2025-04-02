@@ -29,10 +29,10 @@ const SpeechDetailsTab = ({ form }: SpeechDetailsTabProps) => {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="formal">Formal & elevated</SelectItem>
-                <SelectItem value="encouraging">Encouraging & supportive</SelectItem>
-                <SelectItem value="reflective">Reflective & motivational</SelectItem>
-                <SelectItem value="inspirational">Uplifting & inspirational</SelectItem>
+                <SelectItem value="Formal & elevated">Formal & elevated</SelectItem>
+                <SelectItem value="Encouraging & supportive">Encouraging & supportive</SelectItem>
+                <SelectItem value="Reflective & motivational">Reflective & motivational</SelectItem>
+                <SelectItem value="Uplifting & inspirational">Uplifting & inspirational</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />

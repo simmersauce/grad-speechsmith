@@ -95,7 +95,7 @@ serve(async (req) => {
     
     // Generate 3 different speeches with the same tone
     const speechVersions = [];
-    const tone = formData.tone || "inspirational"; // Default to inspirational if no tone provided
+    const tone = formData.tone || "Uplifting & inspirational"; // Use full tone description as default
 
     for (let i = 0; i < 3; i++) {
       const versionNumber = i + 1;
