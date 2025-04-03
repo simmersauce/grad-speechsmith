@@ -5,7 +5,7 @@ import { determineCustomerReference } from "./database.ts";
 import { sendEmailWithAttachments } from "./emailSender.ts";
 import { initSentry } from "../shared/sentry.ts";
 
-// Initialize Sentry
+// Initialize Sentry for function
 const sentry = initSentry("send-emails");
 
 serve(async (req) => {
