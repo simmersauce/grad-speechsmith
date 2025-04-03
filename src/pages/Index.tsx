@@ -38,7 +38,7 @@ const Index = () => {
             <GraduationCap className="w-16 h-16 text-primary" />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Craft Your Perfect Graduation Speech
+            Craft Your Perfect Graduation Speech!
           </h1>
           <p className="text-xl text-gray-600 mb-8">
             Let AI help you create a memorable and inspiring graduation speech in minutes
