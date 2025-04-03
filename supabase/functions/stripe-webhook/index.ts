@@ -6,7 +6,7 @@ import { corsHeaders, createResponse, handleCorsOptions } from "./corsUtils.ts";
 import { handleCheckoutCompleted, parseStripeEvent, initializeStripe } from "./stripeEventHandler.ts";
 import { initSentry } from "../shared/sentry.ts";
 
-// Initialize Sentry for function
+// Initialize Sentry for function!
 const sentry = initSentry("stripe-webhook");
 
 // This disables JWT verification for this function
